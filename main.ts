@@ -9,6 +9,7 @@ import {
 import { KnownTagsCache } from './KnownTagsCache';
 import { KnownTagsView } from './KnownTagsView';
 import { KnownTagsSettingTab } from './KnownTagsSettingTab';
+import { KnownTagsCommand } from 'KnownTagsCommand';
 
 interface KnownTagsSettings {
 	tagsFolder: string;
@@ -20,8 +21,6 @@ const DEFAULT_SETTINGS: KnownTagsSettings = {
 
 // XXX HACK
 export const _global_cache: KnownTagsCache = new KnownTagsCache();
-
-export const KNOWN_TAGS_COMMAND = /^\s*!known_tags(\s|$)/;
 
 export default class KnownTagsPlugin extends Plugin {
 	settings: KnownTagsSettings;
@@ -156,7 +155,7 @@ export default class KnownTagsPlugin extends Plugin {
 		console.log("markdown post processing");
 
 		element.querySelectorAll("code").forEach((code: HTMLElement, _key: number, _parent: NodeListOf<HTMLElement>) => {
-			if (code.innerText.match(KNOWN_TAGS_COMMAND)) {
+			if (KnownTagsCommand.match(code.innerText)) {
 				// this is processing the DOM for the reading view (rendered markdown) so we can destructively change it
 				code.remove();
 			}

@@ -1,18 +1,17 @@
-import { EditorState } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
 import { SyntaxNode } from '@lezer/common/dist/tree';
+import { ParsedCommand } from "ParsedCommand";
 import { KnownTagsCache } from './KnownTagsCache';
 import { KnownTagsWidget } from './KnownTagsWidget';
 
 export class TagEditWidget extends KnownTagsWidget {
-	constructor(cache: KnownTagsCache, editorState: EditorState, tagNode: SyntaxNode) {
-		super(cache, editorState, tagNode);
+	constructor(cache: KnownTagsCache, tagNode: SyntaxNode, command: ParsedCommand) {
+		super(cache, tagNode, command);
 	}
 
 	toDOM(view: EditorView): HTMLElement {
 		const span = document.createElement("span");
-		console.log(`checking tag '${this.tag}'`);
-		const topLevel = this.cache.getTopLevel(this.tag);
+		const topLevel = this.cache.getTopLevel(this.getTag(view));
 		if (topLevel !== undefined) {
 			console.log(`generating edit control for top-level tag '${topLevel}'`);
 			span.appendChild(this.createControl(view));
@@ -20,6 +19,7 @@ export class TagEditWidget extends KnownTagsWidget {
 		return span;
 	}
 
+	// XXX remove
 	ignoreEvent(event: Event): boolean {
 		console.log(`EVENT ignore ${event.type}?`);
 		switch (event.type) {
@@ -32,29 +32,7 @@ export class TagEditWidget extends KnownTagsWidget {
 		}
 	}
 
-	createControl(view: EditorView): HTMLElement {
-		const control = document.createElement("input");
-		control.type = "text";
-		this.styleToMatchTags(control);
-		control.addEventListener('change', async (event: Event) => {
-			console.log("test input");
-			const input: string = ((event.target as any)?.value ?? "").trim();
-			const topLevel = this.cache.getTopLevel(this.tag);
-			if (input.length < 1) {
-				return;
-			}
-			if (topLevel !== undefined) {
-				if (!input.startsWith(`${topLevel}/`)) {
-					// interpret input as just subtag path
-					this.replaceTag(view, `${topLevel}/${input}`);
-					return;
-				}
-			}
-			this.replaceTag(view, input);
-		});
-		return control;
-	}
-
+	// XXX remove
 	private debugEventsBrutally(control: HTMLInputElement) {
 		Object.keys((control as any).__proto__.__proto__).forEach((key: string) => {
 			console.log(`considering ${key}`);
@@ -64,6 +42,7 @@ export class TagEditWidget extends KnownTagsWidget {
 		});
 	}
 
+	// XXX remove
 	private debugEventLogger(event: Event) {
 		if (event.type.startsWith('mousemove')) {
 			return;
@@ -75,5 +54,30 @@ export class TagEditWidget extends KnownTagsWidget {
 			return;
 		}
 		console.log(`EVENT ${event.type}`);
+	}
+	
+	createControl(view: EditorView): HTMLElement {
+		const control = document.createElement("input");
+		control.type = "text";
+		this.styleToMatchTags(control);
+		control.addEventListener('change', async (event: Event) => {
+			console.log("test input");
+			const input: string = ((event.target as any)?.value ?? "").trim();
+			const topLevel = this.cache.getTopLevel(this.getTag(view));
+			if (input.length < 1) {
+				return;
+			}
+			if (topLevel !== undefined) {
+				if (!input.startsWith(`${topLevel}/`)) {
+					// interpret input as just subtag path
+					this.replaceTag(view, `${topLevel}/${input}`);
+					return;
+				}
+			}
+			// edit back to front to keep syntax tree coordinates valid
+			await this.command.handleUsed(view);
+			await this.replaceTag(view, input);
+		});
+		return control;
 	}
 }

@@ -8,8 +8,10 @@ import {
 import { SyntaxNode } from '@lezer/common/dist/tree';
 import { KnownTagsCache } from './KnownTagsCache';
 import { TagRadioGroupWidget } from './TagRadioGroupWidget';
-import { KNOWN_TAGS_COMMAND, _global_cache } from './main';
+import { _global_cache } from './main';
 import { TagEditWidget } from "TagEditWidget";
+import { TagComboBoxWidget } from "TagComboBoxWidget";
+import { KnownTagsCommand } from "./KnownTagsCommand";
 
 export class KnownTagsView implements PluginValue {
 	decorations: DecorationSet;
@@ -29,6 +31,29 @@ export class KnownTagsView implements PluginValue {
 
 	destroy() { }
 
+	private static calculateUnfocusedStyle(command: KnownTagsCommand): { hide: boolean, dim: boolean} {
+		let hide = false;
+		let dim = false;
+
+		// XXX get default behavior from settings
+		// XXX HACK global
+		
+		// process overrides, including conflicting ones
+		if (command.settings.dim) {
+			dim = true;
+		}
+		if (command.settings.hide) {
+			hide = true;
+		}
+		if (command.settings.nodim) {
+			dim = false;
+		}
+		if (command.settings.nohide) {
+			hide = false;
+		}
+		return { hide, dim };
+	}
+
 	buildDecorations(view: EditorView): DecorationSet {
 		if (this.cache === undefined) {
 			// XXX HACK
@@ -41,40 +66,55 @@ export class KnownTagsView implements PluginValue {
 
 		if (this.cache !== undefined) {
 			const cache = this.cache;
-			let tagText: SyntaxNode | undefined = undefined;
+			let tagTextNode: SyntaxNode | undefined = undefined;
 			for (let { from, to } of view.visibleRanges) {
 				syntaxTree(view.state).iterate({
 					from,
 					to,
-					enter(node) {
-						console.log(`${node.type.name} ${node.from} ${node.to}`);
-						console.log(`${node.type.name}: ${view.state.doc.sliceString(node.from, node.to)}`);
-						switch (node.type.name) {
+					enter(nodeRef) {
+						console.log(`${nodeRef.type.name} ${nodeRef.from} ${nodeRef.to}`);
+						console.log(`${nodeRef.type.name}: ${view.state.doc.sliceString(nodeRef.from, nodeRef.to)}`);
+						switch (nodeRef.type.name) {
 							case "inline-code":
-								if ((view.state.doc.sliceString(node.from, node.to).match(KNOWN_TAGS_COMMAND)) &&
-								    (tagText !== undefined)) {
-									const radio = new TagRadioGroupWidget(cache, view.state, tagText);
+								const tagText = view.state.doc.sliceString(nodeRef.from, nodeRef.to);
+								if (KnownTagsCommand.match(tagText) &&
+								    (tagTextNode !== undefined)) {
+									const command = new KnownTagsCommand();
+									if (!command.parse(tagText, nodeRef)) {
+										// XXX log parse failure, also log details in parse(...) function
+										return;
+									}
+									console.log(command);
 
-									// for replace:
-									// builder.add(node.from - 1, node.to + 1, Decoration.replace({ widget: widget }));
-									// for append:
-									// builder.add(to, to, Decoration.widget({ widget: widget }))
-									// for prepend:
-									builder.add(node.from-1, node.from-1, Decoration.widget({ widget: radio }))
-									
-									const text = new TagEditWidget(cache, view.state, tagText);
-									builder.add(node.from-1, node.from-1, Decoration.widget({ widget: text }))
+									if (command.settings.combo) {
+										const combo = new TagComboBoxWidget(cache, tagTextNode, command);
+										builder.add(nodeRef.from-1, nodeRef.from-1, Decoration.widget({ widget: combo }))	
+									} else {
+										const radio = new TagRadioGroupWidget(cache, tagTextNode, command);
+										builder.add(nodeRef.from-1, nodeRef.from-1, Decoration.widget({ widget: radio }))
 
-									// based on settings, dim out or hide command
-									builder.add(node.from, node.to, Decoration.mark({ attributes: { "class": "known-tags known-tags-auto-hide" }}))
-									// builder.add(node.from, node.to, Decoration.mark({ attributes: { "class": "known-tags known-tags-auto-dim" }}))
-									// builder.add(node.from, node.to, Decoration.mark({ attributes: { "class": "known-tags" }}))
+										if (!command.settings.noedit) {
+											const text = new TagEditWidget(cache, tagTextNode, command);
+											builder.add(nodeRef.from-1, nodeRef.from-1, Decoration.widget({ widget: text }))	
+										}
+									}
+
+									const { hide, dim } = KnownTagsView.calculateUnfocusedStyle(command); 
+
+									// use style that implements the selected behavior when not focused
+									if (hide) {
+										builder.add(nodeRef.from, nodeRef.to, Decoration.mark({ attributes: { "class": "known-tags known-tags-auto-hide" }}))
+									} else if (dim) {
+										builder.add(nodeRef.from, nodeRef.to, Decoration.mark({ attributes: { "class": "known-tags known-tags-auto-dim" }}))
+									} else {
+										builder.add(nodeRef.from, nodeRef.to, Decoration.mark({ attributes: { "class": "known-tags" }}))
+									}
 								}
 								break;
 							default:
-								if (node.type.name.startsWith("hashtag_hashtag-end")) {
+								if (nodeRef.type.name.startsWith("hashtag_hashtag-end")) {
 									// freeze copy of the node reference
-									tagText = node.node;
+									tagTextNode = nodeRef.node;
 								}
 						}
 					},

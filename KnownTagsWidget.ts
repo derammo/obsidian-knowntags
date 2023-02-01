@@ -1,18 +1,22 @@
-import { EditorState } from "@codemirror/state";
 import { EditorView, WidgetType } from "@codemirror/view";
 import { SyntaxNode } from '@lezer/common/dist/tree';
+import { ParsedCommand } from "ParsedCommand";
 import { KnownTagsCache } from './KnownTagsCache';
 
 export abstract class KnownTagsWidget extends WidgetType {
 	cache: KnownTagsCache;
 	tagNode: SyntaxNode;
-	tag: string;
+	command: ParsedCommand;
 
-	constructor(cache: KnownTagsCache, editorState: EditorState, tagNode: SyntaxNode) {
+	constructor(cache: KnownTagsCache, tagNode: SyntaxNode, command: ParsedCommand) {
 		super();
 		this.cache = cache;
 		this.tagNode = tagNode;
-		this.tag = editorState.doc.sliceString(tagNode.from, tagNode.to);
+		this.command = command;
+	}
+
+	getTag(view: EditorView): string {
+		return view.state.doc.sliceString(this.tagNode.from, this.tagNode.to);
 	}
 
 	async replaceTag(view: EditorView, value: string) {
