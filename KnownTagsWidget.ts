@@ -1,16 +1,16 @@
 import { EditorView, WidgetType } from "@codemirror/view";
 import { SyntaxNode } from '@lezer/common/dist/tree';
+import { KnownTagsHost } from "KnownTagsHost";
 import { ParsedCommand } from "ParsedCommand";
-import { KnownTagsCache } from './KnownTagsCache';
 
 export abstract class KnownTagsWidget extends WidgetType {
-	cache: KnownTagsCache;
+	host: KnownTagsHost;
 	tagNode: SyntaxNode;
 	command: ParsedCommand;
 
-	constructor(cache: KnownTagsCache, tagNode: SyntaxNode, command: ParsedCommand) {
+	constructor(host: KnownTagsHost, tagNode: SyntaxNode, command: ParsedCommand) {
 		super();
-		this.cache = cache;
+		this.host = host;
 		this.tagNode = tagNode;
 		this.command = command;
 	}

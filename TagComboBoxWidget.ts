@@ -1,26 +1,26 @@
 import { EditorView } from "@codemirror/view";
 import { SyntaxNode } from '@lezer/common/dist/tree';
+import { KnownTagsHost } from "KnownTagsHost";
 import { ParsedCommand } from "ParsedCommand";
-import { KnownTagsCache } from './KnownTagsCache';
 import { KnownTagsWidget } from './KnownTagsWidget';
 
 export class TagComboBoxWidget extends KnownTagsWidget {
 	initialValue: string;
 	previousValue: string | undefined = undefined
 
-	constructor(cache: KnownTagsCache, tagNode: SyntaxNode, command: ParsedCommand) {
-		super(cache, tagNode, command);
+	constructor(host: KnownTagsHost, tagNode: SyntaxNode, command: ParsedCommand) {
+		super(host, tagNode, command);
 	}
 
 	toDOM(view: EditorView): HTMLElement {
 		const span = document.createElement("span");
 		const tag = this.getTag(view);
-		const topLevel = this.cache.getTopLevel(tag);
+		const topLevel = this.host.cache.getTopLevel(tag);
 		if (topLevel !== undefined) {
 			const datalistId = `TagComboBoxWidget datalist ${topLevel}`;
 			const datalist = document.createElement("datalist");
 			datalist.id = datalistId;
-			this.cache.getChoices(topLevel).forEach((subpath: string) => {
+			this.host.cache.getChoices(topLevel).forEach((subpath: string) => {
 				const option = document.createElement("option");
 				option.value = `${subpath}`;
 				datalist.appendChild(option);

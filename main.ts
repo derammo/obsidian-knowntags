@@ -10,29 +10,19 @@ import { KnownTagsCache } from './KnownTagsCache';
 import { KnownTagsView } from './KnownTagsView';
 import { KnownTagsSettingTab } from './KnownTagsSettingTab';
 import { KnownTagsCommand } from 'KnownTagsCommand';
-
-interface KnownTagsSettings {
-	tagsFolder: string;
-}
-
-const DEFAULT_SETTINGS: KnownTagsSettings = {
-	tagsFolder: ""
-}
-
-// XXX HACK
-export const _global_cache: KnownTagsCache = new KnownTagsCache();
+import { DEFAULT_SETTINGS, KnownTagsSettings } from './KnownTagsSettings';
+import { KnownTagsHost } from 'KnownTagsHost';
 
 export default class KnownTagsPlugin extends Plugin {
-	settings: KnownTagsSettings;
 	cache: KnownTagsCache;
 	viewExtension: ViewPlugin<KnownTagsView>;
+	settings: KnownTagsSettings;
+	settingsDirty: boolean = false;
 
 	async onload() {
 		await this.loadSettings();
 
-		// XXX HACK while I haven't figured out how to connect from view plugin to plugin
-		// this.cache = new KnownTagsCache();
-		this.cache = _global_cache;
+		this.cache = new KnownTagsCache();
 
 		// This creates an icon in the left ribbon.
 		const ribbonIconEl = this.addRibbonIcon('dice', 'Sample Plugin', (evt: MouseEvent) => {
@@ -123,7 +113,12 @@ export default class KnownTagsPlugin extends Plugin {
 		const knownTagsViewSpec: PluginSpec<KnownTagsView> = {
 			decorations: (value: KnownTagsView) => value.decorations,
 		};
-		this.viewExtension = ViewPlugin.fromClass(KnownTagsView, knownTagsViewSpec);
+		const host: KnownTagsHost = this;
+		this.viewExtension = ViewPlugin.fromClass(class extends KnownTagsView {
+			getPlugin(): KnownTagsHost {
+				return host;
+			}
+		}, knownTagsViewSpec);
 		this.registerEditorExtension(this.viewExtension);
 
 		app.workspace.on("codemirror", (cmEditor: CodeMirror.Editor) => this.onCodeMirrorEvent(cmEditor));
@@ -135,20 +130,6 @@ export default class KnownTagsPlugin extends Plugin {
 
 	onCodeMirrorEvent(cmEditor: CodeMirror.Editor) {
 		console.log("code mirror event")
-	}
-
-	onViewInitialized() {
-		const activeView = app.workspace.getActiveViewOfType(MarkdownView);
-		if (activeView) {
-			// @ts-expect-error, not typed
-			const editorView = view.editor.cm as EditorView;
-			const plugin: KnownTagsView|null = editorView.plugin(this.viewExtension)
-			if (plugin !== null) {
-				plugin.cache = this.cache;
-			}
-		} else {
-			console.log("code mirror event without active view")
-		}
 	}
 
 	onMarkDownPostProcessing(element: HTMLElement, _context: MarkdownPostProcessorContext): any {
@@ -175,7 +156,9 @@ export default class KnownTagsPlugin extends Plugin {
 	}
 
 	async saveSettings() {
+		this.settingsDirty = true;
 		await this.saveData(this.settings);
+		this.app.workspace.updateOptions();
 	}
 }
 
