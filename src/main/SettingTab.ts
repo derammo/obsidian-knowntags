@@ -1,7 +1,7 @@
 import { App, PluginSettingTab, Setting } from 'obsidian';
-import KnownTagsPlugin from './main';
+import { KnownTagsPlugin } from "./PluginImplementation";
 
-export class KnownTagsSettingTab extends PluginSettingTab {
+export class SettingTab extends PluginSettingTab {
 	plugin: KnownTagsPlugin;
 
 	constructor(app: App, plugin: KnownTagsPlugin) {

@@ -1,7 +1,7 @@
 import { CachedMetadata, Notice, TFile } from 'obsidian';
 
 export class TagInfo {
-
+	[key: string] : {}
 }
 
 export class KnownTagsCache {
@@ -24,6 +24,7 @@ export class KnownTagsCache {
 		}
 	}
 
+	// XXX factor metadata cache base class for derobst
 	scan() {
 		const files = app.vault.getMarkdownFiles();
 		console.log(`scanning ${files.length} markdown files`);
