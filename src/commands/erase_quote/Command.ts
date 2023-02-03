@@ -1,4 +1,4 @@
-import { HEADER_NODE_PREFIX, QUOTE_NODE_PREFIX } from "src/derobst/ObsidianInternals";
+import { HEADER_NODE_PREFIX, QUOTE_NODE_CONTAINING_COMMAND_PREFIX, QUOTE_NODE_PREFIX } from "src/derobst/ObsidianInternals";
 import { Decoration, SyntaxNode } from "src/derobst/ParsedCommand";
 import { ParsedCommandWithSettings } from "src/derobst/ParsedCommandWithSettings";
 
@@ -31,7 +31,7 @@ export class Command extends ParsedCommandWithSettings {
 				// found what we want
 				break;
 			}
-			if (scan.type.name.startsWith("formatting_formatting-quote")) {
+			if (scan.type.name.startsWith(QUOTE_NODE_CONTAINING_COMMAND_PREFIX)) {
 				// found what we want, we are inside the quote
 				break;
 			}

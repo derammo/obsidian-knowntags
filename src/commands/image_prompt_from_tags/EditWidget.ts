@@ -11,13 +11,11 @@ const configuration = new Configuration({
 const openai = new OpenAIApi(configuration);
 
 export class EditWidget extends CommandWidget<Host> {
-	quote: SyntaxNode;
 	generated: string;
 	previousValue: string | undefined;
 
-	constructor(host: Host, command: ParsedCommand, quote: SyntaxNode) {
+	constructor(host: Host, command: ParsedCommand, public quote: SyntaxNode, public descriptors: Set<string>) {
 		super(host, command);
-		this.quote = quote;
 	}
 
 	toDOM(view: EditorView): HTMLElement {
@@ -36,8 +34,12 @@ export class EditWidget extends CommandWidget<Host> {
 	}
 
 	buildTextEdit(view: EditorView): HTMLElement {
-		// XXX HACK prototype
-		this.generated = "baker, male, human, friendly,  middle aged, portrait, colored pencil, realistic, white background";
+		const promptParts: string[] = Array.from(this.descriptors);
+		promptParts.push("portrait");
+		promptParts.push("colored pencil");
+		promptParts.push("realistic");
+		promptParts.push("white background");
+		this.generated = promptParts.join(",");
 
 		const control = document.createElement("input");
 		

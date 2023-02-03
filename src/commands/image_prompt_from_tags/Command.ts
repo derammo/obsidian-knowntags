@@ -1,12 +1,13 @@
+import { HEADER_NODE_PREFIX, QUOTE_NODE_CONTAINING_COMMAND_PREFIX, QUOTE_NODE_PREFIX } from "src/derobst/ObsidianInternals";
 import { Decoration, SyntaxNode } from "src/derobst/ParsedCommand";
-import { ParsedCommandWithSettings } from "src/derobst/ParsedCommandWithSettings";
+import { DescriptorsCommand } from "src/main/DescriptorsCommand";
 
 import { CommandContext } from "src/main/Plugin";
 import { EditWidget } from "./EditWidget";
 
 const COMMAND_REGEX = /^\s*!image-prompt-from-tags(?:\s(.*)|$)/;
 
-export class Command extends ParsedCommandWithSettings {
+export class Command extends DescriptorsCommand {
 	get regex(): RegExp {
 		return COMMAND_REGEX;
 	}
@@ -19,15 +20,20 @@ export class Command extends ParsedCommandWithSettings {
 		let scan: SyntaxNode | null = this.commandNode;
 		while (scan !== null) {
 			console.log(`${scan.type.name} '${context.view.state.doc.sliceString(scan.from, scan.to)}'`)
-			if (scan.type.name.startsWith("HyperMD-header")) {
+			if (scan.type.name.startsWith(HEADER_NODE_PREFIX)) {
 				// gone too far
 				scan = null;
 				break;
 			}
-			if (scan.type.name.startsWith("HyperMD-quote")) {
+			if (scan.type.name.startsWith(QUOTE_NODE_PREFIX)) {
 				// found what we want
 				break;
 			}
+			if (scan.type.name.startsWith(QUOTE_NODE_CONTAINING_COMMAND_PREFIX)) {
+				// found what we want, we are inside the quote
+				break;
+			}
+
 			scan = scan.prevSibling;
 		}
 		
@@ -35,13 +41,23 @@ export class Command extends ParsedCommandWithSettings {
 			// no quote text to work on, do nothing
 			return;
 		}
-		const quote = context.view.state.doc.sliceString(scan.from, scan.to);
-		if (!quote.startsWith("> ")) {
+
+		const quoteText = context.view.state.doc.sliceString(scan.from, scan.to);
+		const quote = scan;
+		if (!quoteText.startsWith("> ")) {
 			// don't work on stuff that has been disturbed too much
 			return;
 		}
-		const text = new EditWidget(context.plugin, this, scan);
-		context.builder.add(scan.from, scan.to, Decoration.widget({ widget: text }));
+
+		let descriptors = this.createDescriptorsCollection();
+
+		// gather from Description section
+		this.gatherDescriptionSection(descriptors, context);
+
+		// XXX gather from tags
+
+		const text = new EditWidget(context.plugin, this, quote, descriptors);
+		context.builder.add(quote.from, quote.to, Decoration.widget({ widget: text }));
 		context.markWithBehaviorClasses(this);
 	}
 }

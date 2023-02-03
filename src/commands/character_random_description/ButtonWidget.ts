@@ -51,7 +51,7 @@ export class ButtonWidget extends CommandWidget<Host> {
 		const promptParts: string[] = Array.from(this.descriptors);
 		promptParts.push("using 2 words for each attribute");
 
-		const prompt: string = `list ${generate_number} physical attributes or articles of clothing of an atypical baker, friendly, elven, female, rich, ${promptParts.join(",")}`;
+		const prompt: string = `list ${generate_number} physical attributes or articles of clothing or equipment of a medieval baker, friendly, elven, female, rich, ${promptParts.join(",")}`;
 		console.log(`PROMPT '${prompt}'`);
 
 		return openai.createCompletion({
