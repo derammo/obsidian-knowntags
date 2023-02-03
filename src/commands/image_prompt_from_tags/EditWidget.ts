@@ -2,6 +2,14 @@ import { CommandWidget } from "src/derobst/CommandWidget";
 import { EditorView, ParsedCommand, SyntaxNode } from "src/derobst/ParsedCommand";
 import { Host } from "src/main/Plugin";
 
+import { Configuration, CreateCompletionResponseChoicesInner, OpenAIApi } from "openai";
+
+const configuration = new Configuration({
+  apiKey: "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" // process.env.OPENAI_API_KEY,
+});
+
+const openai = new OpenAIApi(configuration);
+
 export class EditWidget extends CommandWidget<Host> {
 	quote: SyntaxNode;
 	generated: string;
@@ -76,9 +84,32 @@ export class EditWidget extends CommandWidget<Host> {
 
 	buildButton(view: EditorView): HTMLElement {
 		const control = document.createElement("button");
+		const prompt = "list 4 physical attributes or articles of clothing of a friendly elven baker, using 2 words for each attribute";
+		// const prompt = "attribute: friendly\nattribute: elven\nattribute: baker\nattribute: ";
+		
 		control.innerText = "generate";
 		control.addEventListener('click', async (event: Event) => {
-			await this.command.handleUsed(view);
+			let active: Promise<void>[] = [];
+		 	[ "text-ada-001", "text-babbage-001", "text-curie-001", "text-davinci-003" ].forEach((model: string) => {
+				active.push(openai.createCompletion({
+					model: model,
+					prompt: prompt,
+					temperature: 0.9,
+					max_tokens: 100,
+					presence_penalty: 1
+				})
+				.then((response) => {
+					console.log(model);
+					response.data.choices.forEach((value: CreateCompletionResponseChoicesInner) => {
+						console.log(value.text);
+					})
+					console.log(openai);
+				}));
+			})
+			Promise.all(active)
+			.then(() => {
+				this.command.handleUsed(view);
+			})
 		});
 		return control;
 	}

@@ -5,15 +5,27 @@ import {
 	DecorationSet,
 	EditorView, PluginValue, ViewUpdate
 } from "@codemirror/view";
-import { SyntaxNode } from '@lezer/common/dist/tree';
+import { SyntaxNode, SyntaxNodeRef } from '@lezer/common/dist/tree';
 import { editorLivePreviewField } from "obsidian";
 
 import { CommandContext, Host } from "./Plugin";
 
 import * as ImagePromptFromTagsCommand from "src/commands/image_prompt_from_tags/Command";
 import * as KnownTagsCommand from "src/commands/known_tags/Comand";
+import * as CharacterRandomDescription from "src/commands/character_random_description/Command";
+import * as EraseQuote from "src/commands/erase_quote/Command";
 
 const REQUIRED_COMMAND_PREFIX = /^\s*!/;
+
+interface MinimalCommand {
+    parse(text: string, commandNodeRef: SyntaxNodeRef): RegExpMatchArray | null;
+	buildWidget(context: CommandContext): void;
+}
+
+interface MinimalCommandClass<T> {
+    new(): MinimalCommand;    
+	match(text: string): boolean;
+}
 
 // CodeMirror ViewPlugin to replace recognized commands with UI elements in Edit view
 export abstract class CommandsViewPlugin implements PluginValue {
@@ -58,7 +70,11 @@ export abstract class CommandsViewPlugin implements PluginValue {
 				to,
 				enter(scannedNode) {
 					switch (scannedNode.type.name) {
-						case "inline-code":
+						case 'Document':
+							break;
+						case "inline-code": 
+						case "inline-code_quote_quote-1":
+							// console.log(`SCAN_COMMANDS ${scannedNode.type.name} '${view.state.doc.sliceString(scannedNode.from, scannedNode.to)}'`);
 							const commandText = view.state.doc.sliceString(scannedNode.from, scannedNode.to);
 							if (!commandText.match(REQUIRED_COMMAND_PREFIX)) {
 								// all our commands are encoded like this
@@ -72,16 +88,20 @@ export abstract class CommandsViewPlugin implements PluginValue {
 									return;
 								}
 								command.buildWidget(context, tagNode);
-							} else if (ImagePromptFromTagsCommand.Command.match(commandText)) {
-								const command = new ImagePromptFromTagsCommand.Command();
-								if (!command.parse(commandText, scannedNode)) {
-									// XXX log parse failure, also log details in parse(...) function
-									return;
-								}
-								command.buildWidget(context);
+								return;
+							} 
+							if (CommandsViewPlugin.dispatch(ImagePromptFromTagsCommand.Command, context, scannedNode, commandText)) {
+								return;
+							}
+							if (CommandsViewPlugin.dispatch(CharacterRandomDescription.Command, context, scannedNode, commandText)) {
+								return;
+							}
+							if (CommandsViewPlugin.dispatch(EraseQuote.Command, context, scannedNode, commandText)) {
+								return;
 							}
 							break;
 						default:
+							// console.log(`SEARCH_COMMANDS ${scannedNode.type.name} '${view.state.doc.sliceString(scannedNode.from, scannedNode.to)}'`);
 							if (scannedNode.type.name.startsWith("hashtag_hashtag-end")) {
 								// freeze copy of the node reference
 								tagNode = scannedNode.node;
@@ -92,4 +112,21 @@ export abstract class CommandsViewPlugin implements PluginValue {
 		}
 		return context.builder.finish();
 	}
+
+	static dispatch<T>(commandClass: MinimalCommandClass<T>, context: CommandContext, scannedNode: SyntaxNodeRef, commandText: string): boolean {
+		// console.log(commandClass);
+		if (commandClass.match(commandText)) {
+			// console.log(`DISPATCH matched ${commandText} for ${commandClass.name}`);
+			const command = new commandClass();
+			if (command.parse(commandText, scannedNode)) {
+				// console.log(`DISPATCH building widget for ${commandClass.name}`);
+				command.buildWidget(context);		
+				return true;
+			}
+			// XXX log parse failure, also log details in parse(...) function
+		}
+		return false;
+	}
 }
+
+
