@@ -24,8 +24,25 @@ export interface Host extends MinimalPlugin {
     settingsDirty: boolean;
     metadataCache: MetadataCache;
 
+    /**
+     * Registers an DOM event to be detached when unloading
+     * @public
+     */
+    registerDomEvent<K extends keyof WindowEventMap>(el: Window, type: K, callback: (this: HTMLElement, ev: WindowEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+    /**
+     * Registers an DOM event to be detached when unloading
+     * @public
+     */
+    registerDomEvent<K extends keyof DocumentEventMap>(el: Document, type: K, callback: (this: HTMLElement, ev: DocumentEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+    /**
+     * Registers an DOM event to be detached when unloading
+     * @public
+     */
+    registerDomEvent<K extends keyof HTMLElementEventMap>(el: HTMLElement, type: K, callback: (this: HTMLElement, ev: HTMLElementEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+
 	generateImages(prompt: string): Promise<{ generationId: string; urls: string[]; }>; 
 	createFileFromBuffer(arg0: string, buffer: Buffer): Promise<TFile>;
+	loadFile(path: string): Promise<TFile>;
 };
 
 // services used during construction of decorations for a particular inline code command
@@ -57,17 +74,24 @@ export class CommandContext extends ViewPluginContextBase<Host> {
         return { hide, dim };
     }
 
-    markWithBehaviorClasses(command: ParsedCommandWithSettings) {
-        const { hide, dim } = this.calculateUnfocusedStyle(command);
-        const builder = this.builder;
+    markBasedOnSettings(command: ParsedCommandWithSettings) {
+        this.autoDimOrHide(command, this.calculateUnfocusedStyle(command));
+    }
 
-        // use style that implements the selected behavior when not focused
+    markBasedOnDefaults(command: ParsedCommand) {
+        // get default behavior from settings
+        const settings: Settings = this.plugin.settings;
+        this.autoDimOrHide(command, { dim: settings.defaultDim, hide: settings.defaultHide });
+    }
+
+    // use style that implements the selected behavior when not focused
+    private autoDimOrHide(command: ParsedCommand, { dim, hide }: { dim: boolean; hide: boolean; }) {
         if (hide) {
-            builder.add(command.commandNode.from, command.commandNode.to, Decoration.mark({ attributes: { "class": "known-tags known-tags-auto-hide" } }));
+            this.builder.add(command.commandNode.from, command.commandNode.to, Decoration.mark({ attributes: { "class": "known-tags known-tags-auto-hide" } }));
         } else if (dim) {
-            builder.add(command.commandNode.from, command.commandNode.to, Decoration.mark({ attributes: { "class": "known-tags known-tags-auto-dim" } }));
+            this.builder.add(command.commandNode.from, command.commandNode.to, Decoration.mark({ attributes: { "class": "known-tags known-tags-auto-dim" } }));
         } else {
-            builder.add(command.commandNode.from, command.commandNode.to, Decoration.mark({ attributes: { "class": "known-tags" } }));
+            this.builder.add(command.commandNode.from, command.commandNode.to, Decoration.mark({ attributes: { "class": "known-tags" } }));
         }
     }
 }

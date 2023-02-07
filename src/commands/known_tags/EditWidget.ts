@@ -11,7 +11,6 @@ export class EditWidget extends WidgetBase {
 		const span = document.createElement("span");
 		const topLevel = this.host.cache.getTopLevel(this.getTag(view));
 		if (topLevel !== undefined) {
-			// console.log(`generating edit control for top-level tag '${topLevel}'`);
 			span.appendChild(this.createControl(view));
 		}
 		return span;
@@ -21,8 +20,7 @@ export class EditWidget extends WidgetBase {
 		const control = document.createElement("input");
 		control.type = "text";
 		this.styleToMatchTags(control);
-		control.addEventListener('change', async (event: Event) => {
-			// console.log("test input");
+		this.host.registerDomEvent(control, "change", async (event: Event) => {
 			const input: string = ((event.target as any)?.value ?? "").trim();
 			const topLevel = this.host.cache.getTopLevel(this.getTag(view));
 			if (input.length < 1) {

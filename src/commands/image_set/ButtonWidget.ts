@@ -1,21 +1,26 @@
 import { CommandWidget } from "src/derobst/CommandWidget";
-import { EditorView, ParsedCommand, SyntaxNode } from "src/derobst/ParsedCommand";
+import { EditorView, ParsedCommand } from "src/derobst/ParsedCommand";
 import { Host } from "src/main/Plugin";
 
 export class ButtonWidget extends CommandWidget<Host> {
-	constructor(host: Host, command: ParsedCommand, public quote: SyntaxNode) {
+	constructor(host: Host, command: ParsedCommand) {
 		super(host, command);
 	}
 
 	toDOM(view: EditorView): HTMLElement {
 		const span = document.createElement("span");
+		span.innerText = "Image Set";
+		span.style.verticalAlign = "top";
+		let text = view.state.doc.sliceString(this.command.commandNode.from, this.command.commandNode.to);
+		const space = text.indexOf(" ");
+		span.ariaLabel = (space < 0)? text : text.substring(space+1);
 		span.appendChild(this.buildButtonSVG(view));
 		return span;
 	}
 
 	buildButtonSVG(view: EditorView): HTMLElement {
 		const control = document.createElement("button");
-		control.ariaLabel = "Delete";
+		control.ariaLabel = "Discard Set";
 		control.style.width = "2em";
 		control.style.height = "2em";
 		control.style.padding = "0.2em";
@@ -50,8 +55,11 @@ export class ButtonWidget extends CommandWidget<Host> {
 
 		this.host.registerDomEvent(control, "click", async (_event: Event) => {
 			this.command.handleUsed(view);
-			view.dispatch({ 
-				changes: { from: this.quote.from, to: this.command.commandNode.to+2 }
+			const line = view.state.doc.lineAt(this.command.commandNode.from);
+			view.dispatch({
+				// remove including newline 
+				// REVISIT: is this the correct way to do it? is there a way to explicitly target a line? what about EOF without EOL?
+			 	changes: { from: line.from, to: line.to + 1 }
 			});		
 		});
 		return control;

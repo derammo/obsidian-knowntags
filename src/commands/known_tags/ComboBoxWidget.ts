@@ -41,7 +41,7 @@ export class ComboBoxWidget extends WidgetBase {
 	}
 
 	private restoreVisibleValueIfUnchanged(input: HTMLInputElement): void {
-		input.addEventListener('focusout', async (event: Event) => {
+		this.host.registerDomEvent(input, "focusout", async (_event: Event) => {
 			if (this.previousValue !== undefined) {
 				// restore value since we chose nothing
 				input.value = this.previousValue;
@@ -51,9 +51,8 @@ export class ComboBoxWidget extends WidgetBase {
 	}
 
 	private updateTagFromChangedValue(input: HTMLInputElement, topLevel: string, view: EditorView): void {
-		input.addEventListener('change', async (event: Event) => {
+		this.host.registerDomEvent(input, "change", async (event: Event) => {
 			const value: string = ((event.target as any)?.value ?? "").trim();
-			console.log(`combo box change to '${value}'`);
 			if (value.length < 1) {
 				if (this.previousValue !== undefined) {
 					// restore value since we chose nothing
@@ -76,7 +75,7 @@ export class ComboBoxWidget extends WidgetBase {
 	}
 
 	private clearUnchangedValueOnMouseDown({ input }: { input: HTMLInputElement; }): void {
-		input.addEventListener('mousedown', async (_event: Event) => {
+		this.host.registerDomEvent(input, "mousedown", async (_event: Event) => {
 			if (input.value == this.initialValue) {
 				// don't use current value for completion
 				this.previousValue = input.value;

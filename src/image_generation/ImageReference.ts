@@ -12,6 +12,7 @@ export class ImageReference {
   from: number;
   to: number;
   url: string;
+  file: TFile | undefined;
 
   constructor(
     state: EditorState,
@@ -47,47 +48,76 @@ export class ImageReference {
     });
   }
 
-  downloadRemoteImage(host: Host, view: EditorView) {
+  insertLineBreak(view: EditorView) {
+    view.dispatch({
+      changes: {
+        from: this.from,
+        to: this.from,
+        insert: "\n"
+      }
+    });
+  }
+
+  downloadRemoteImage(host: Host, view: EditorView): Promise<TFile> {
+    if (this.file !== undefined) {
+      return Promise.resolve(this.file);  // already downloaded
+    }
+
+    if (!this.url.startsWith("https://")) {
+      return host.loadFile(this.url);
+    }
     const imageReference = this;
     const url = new URL(this.url);
     
-    got.got(url, { responseType: "buffer" })
+    return got.got(url, { responseType: "buffer" })
       .then((response: got.Response<Buffer>) => {
         return response.body;
       })
-      .then((buffer: Buffer) => {
-        return fileTypeFromBuffer(buffer)
-          .then((fileType: FileTypeResult) => {
-            return { buffer, fileType };
-          });
-      })
+      .then(this.getFileType)
       .then((results: { buffer: Buffer; fileType: FileTypeResult; }) => {
-        if (results.fileType.ext !== "png") {
-          throw new Error("Unknown file type");
-        }
-        const fileName = url.pathname.split('/').last()!;
-        // XXX config
-        // XXX also create markdown file with original meta information such as prompt and all components of the URL other than authorization ones
-        return host.createFileFromBuffer(`DALL-E/${fileName}`, results.buffer);
+        return this.storeFile(host, url, results);
       })
       .then((file: TFile) => {
         // rescane the current document version to find any URL occurrences that are still there
-        const urls: SyntaxNode[] = [];
-        syntaxTree(view.state).iterate({
-          enter(scannedNode) {
-            switch (scannedNode.type.name) {
-              case 'string_url':
-                if (view.state.doc.sliceString(scannedNode.from, scannedNode.to) === imageReference.url) {
-                  urls.push(scannedNode.node);
-                }
-                break;
-            }
-          }
-        });
-        // replace all image references, in reverse order
-        urls.reduceRight((_, url: SyntaxNode) => {
-          view.dispatch({ changes: { from: url.from, to: url.to, insert: file.path } });
-        }, null);
+        this.replaceReferences(view, imageReference.url, file);
+        this.file = file;
+        return file;
       });
+  }
+
+  private async getFileType(buffer: Buffer): Promise<{ buffer: Buffer, fileType: FileTypeResult }> {
+    return fileTypeFromBuffer(buffer)
+      .then((fileType: FileTypeResult) => {
+        return { buffer, fileType };
+      });
+  }
+
+  private async storeFile(host: Host, url: URL, results: { buffer: Buffer; fileType: FileTypeResult; }): Promise<TFile> {
+    if (results.fileType.ext !== "png") {
+      throw new Error("Unknown file type");
+    }
+    const fileName = url.pathname.split('/').last()!;
+    // XXX config
+    // XXX also create markdown file with original meta information such as prompt and all components of the URL other than authorization ones
+    return host.createFileFromBuffer(`DALL-E/${fileName}`, results.buffer);
+  }
+
+  private replaceReferences(view: EditorView, url: string, file: TFile) {
+    const urls: SyntaxNode[] = [];
+    syntaxTree(view.state).iterate({
+      enter(scannedNode) {
+        switch (scannedNode.type.name) {
+          case 'string_url':
+            if (view.state.doc.sliceString(scannedNode.from, scannedNode.to) === url) {
+              urls.push(scannedNode.node);
+            }
+            break;
+        }
+      }
+    });
+    // replace all image references, in reverse order
+    urls.reduceRight((_, url: SyntaxNode) => {
+      view.dispatch({ changes: { from: url.from, to: url.to, insert: file.path } });
+    }, null);
   }
 }

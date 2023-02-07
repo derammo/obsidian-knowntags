@@ -33,6 +33,6 @@ export class Command extends ParsedCommandWithSettings {
 				builder.add(this.commandNode.from - 1, this.commandNode.from - 1, Decoration.widget({ widget: text }));
 			}
 		}
-		context.markWithBehaviorClasses(this);
+		context.markBasedOnSettings(this);
 	}
 }

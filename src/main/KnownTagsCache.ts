@@ -27,7 +27,6 @@ export class KnownTagsCache {
 	// XXX factor metadata cache base class for derobst
 	scan() {
 		const files = app.vault.getMarkdownFiles();
-		console.log(`scanning ${files.length} markdown files`);
 		let tagsDict: { [topLevel: string]: { [subPath: string]: TagInfo; }; } = {};
 
 		// sort by path descending, even though that apparently is already the case
@@ -67,7 +66,6 @@ export class KnownTagsCache {
 			});
 		});
 		this.data = tagsDict;
-		// console.log(this.data);
 	}
 
 	getTopLevel(tag: string): string | null {

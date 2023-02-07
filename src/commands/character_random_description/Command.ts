@@ -26,7 +26,7 @@ export class Command extends DescriptorsCommand {
 		// create button that will request more descriptors based on these
 		const text = new ButtonWidget(context.plugin, this, descriptors);
 		context.builder.add(this.commandNode.from-1, this.commandNode.from-1, Decoration.widget({ widget: text }));
-		context.markWithBehaviorClasses(this);
+		context.markBasedOnSettings(this);
 	}
 }
 

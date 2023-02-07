@@ -2,6 +2,7 @@ import { WidgetType } from "@codemirror/view";
 import { EditorView, SyntaxNode } from "src/derobst/ParsedCommandWithSettings";
 import { ImageReference } from "./ImageReference";
 import { Host } from "src/main/Plugin";
+import { TFile } from "obsidian";
 
 export class ButtonWidget extends WidgetType {
 	height: number | undefined;
@@ -34,8 +35,10 @@ export class ButtonWidget extends WidgetType {
 		span.style.width = "70px";
 		span.style.marginLeft = "-70px";
 
-		span.appendChild(this.buildKeepButton(view));
 		span.appendChild(this.buildChooseButton(view));
+		span.appendChild(this.buildKeepButton(view));
+		span.appendChild(this.buildDiscardButton(view));
+
 		const testLast = document.createElement("div")
 		// testLast.style.backgroundColor = "red";
 		testLast.style.flexGrow = "1";
@@ -51,7 +54,7 @@ export class ButtonWidget extends WidgetType {
 		const host = this.host;
 		control.innerText = "Keep";
 		if (imageReference.url.startsWith("https:")) {
-			control.addEventListener('click', async (_event: Event) => {
+			this.host.registerDomEvent(control, "click", async (_event: Event) => {
 				imageReference.downloadRemoteImage(host, view);
 			});
 		} else {
@@ -65,20 +68,37 @@ export class ButtonWidget extends WidgetType {
 	buildChooseButton(view: EditorView): HTMLElement {
 		const control = this.buildFlexButton();
 		control.innerText = "Choose";
+		const host = this.host;
 
-		control.addEventListener('click', async (_event: Event) => {
+		host.registerDomEvent(control, "click", async (_event: Event) => {
 			// erase all image references, in reverse order
 			this.imageReferences.reduceRight((_, imageReference: ImageReference) => {
 				imageReference.erase(view);
 			}, null);
 
-			// create a new reference to the chosen image, without UI
-			this.imageReferences.first()?.insertReference(view, this.imageReference.url);
+			// make sure we secure the file
+			const file: TFile = await this.imageReference.downloadRemoteImage(host, view);
+
+			// create a new reference to the chosen image at the only undisturbed location, without UI
+			this.imageReferences.first()?.insertReference(view, file.path);
+
+			// don't let this be on the same line as an image set, because we are about to destroy those
+			this.imageReferences.first()?.insertLineBreak(view);
 		});
 		return control;
 	}
 
-	private buildFlexButton(): HTMLButtonElement {
+	buildDiscardButton(view: EditorView): HTMLElement {
+		const control = this.buildFlexButton();
+		control.innerText = "Discard";
+
+		this.host.registerDomEvent(control, "click", async (_event: Event) => {
+			this.imageReference.erase(view);
+		});
+		return control;
+	}
+
+	buildFlexButton(): HTMLButtonElement {
 		const control = document.createElement("button");
 		control.style.display = "flex";
 		control.style.flexGrow = "0";

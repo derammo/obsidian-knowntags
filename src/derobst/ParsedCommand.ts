@@ -7,9 +7,10 @@ export { Decoration } from "@codemirror/view";
 export type { SyntaxNode } from '@lezer/common/dist/tree';
 export type { EditorView } from '@codemirror/view';
 
-export abstract class ParsedCommand {
+export abstract class  ParsedCommand {
     abstract get regex(): RegExp;
 
+    // WARNING: this is only stable as long as the document does not change, because it contains offsets into the text
     commandNode: SyntaxNode;
 
     parse(text: string, commandNodeRef: SyntaxNodeRef): RegExpMatchArray | null {

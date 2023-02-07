@@ -17,11 +17,9 @@ export class Command extends ParsedCommandWithSettings {
 	}
 
 	buildWidget(context: CommandContext): void {
-		// console.log("BUILDER building erase-quote")
 		let scan: SyntaxNode | null = this.commandNode;
 		
 		while (scan !== null) {
-			// console.log(`BUILDER ${scan.type.name} '${context.view.state.doc.sliceString(scan.from, scan.to)}'`)
 			if (scan.type.name.startsWith(HEADER_NODE_PREFIX)) {
 				// gone too far
 				scan = null;
@@ -45,7 +43,7 @@ export class Command extends ParsedCommandWithSettings {
 
 		const text = new ButtonWidget(context.plugin, this, scan);
 		context.builder.add(this.commandNode.from-1, this.commandNode.from-1, Decoration.widget({ widget: text }));
-		context.markWithBehaviorClasses(this);
+		context.markBasedOnSettings(this);
 	}
 }
 

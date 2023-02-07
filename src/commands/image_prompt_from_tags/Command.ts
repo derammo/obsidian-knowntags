@@ -27,7 +27,6 @@ export class Command extends DescriptorsCommand {
 		let scan: SyntaxNode | null = this.commandNode;
 		let quoteEnd: SyntaxNode | null = null;
 		while (scan !== null) {
-			// console.log(`${scan.type.name} '${context.view.state.doc.sliceString(scan.from, scan.to)}'`)
 			if (scan.type.name.startsWith(HEADER_NODE_PREFIX)) {
 				// gone too far
 				scan = null;
@@ -70,7 +69,7 @@ export class Command extends DescriptorsCommand {
 
 		const text = new EditWidget(context.plugin, this, quoteStart, quoteEnd, descriptors);
 		context.builder.add(quoteStart.from, this.commandNode.from, Decoration.replace({ widget: text }));
-		context.markWithBehaviorClasses(this);
+		context.markBasedOnSettings(this);
 	}
 }
 

@@ -1,11 +1,8 @@
 import { syntaxTree } from "@codemirror/language";
 import {
-  Extension,
+  EditorState, Extension,
   RangeSetBuilder,
-  StateField,
-  Transaction,
-  Text,
-  EditorState
+  StateField, Text, Transaction
 } from "@codemirror/state";
 import {
   Decoration,
@@ -27,7 +24,7 @@ export function createGeneratedImagesDecorationsStateField(host: Host): StateFie
       if (state.doc.length < 1) {
         // document is empty, no need to scan it (this happens every time on initialization)
         return Decoration.none;
-      } 
+      }
       if (!state.field(editorLivePreviewField)) {
         // source mode
         return Decoration.none;
@@ -45,10 +42,8 @@ export function createGeneratedImagesDecorationsStateField(host: Host): StateFie
       const builder = new RangeSetBuilder<Decoration>();
       if (!transaction.docChanged) {
         // document not changed and we have already scannned it initially
-        console.log("UPDATE no doc change")
         return oldState;
       }
-      console.log("UPDATE scanning")
       walkTree(host, builder, transaction.state);
       return builder.finish();
     },
@@ -59,7 +54,7 @@ export function createGeneratedImagesDecorationsStateField(host: Host): StateFie
   });
 }
 
-// XXX remove
+// XXX consider using this to detect when changes are relevant to our decorations, but how are ranges meaningful if we DON'T recreate decorations?
 function walkChanges(transaction: Transaction): void {
   transaction.changes.iterChanges((fromOld: number, toOld: number, fromNew: number, toNew: number, inserted: Text) => {
     console.log(`STATE_UPDATE CHANGE OLD ${fromOld}..${toOld} '${transaction.state.doc.sliceString(fromOld, toOld)}'`);
@@ -70,19 +65,17 @@ function walkChanges(transaction: Transaction): void {
 function walkTree(host: Host, builder: RangeSetBuilder<Decoration>, state: EditorState) {
   // accumulate all image references so that our buttons can share the collection
   const imageReferences: ImageReference[] = [];
+
   let altText: SyntaxNode | null = null;
   let generationId: string;
   syntaxTree(state).iterate({
     enter(scannedNode) {
       switch (scannedNode.type.name) {
         case 'Document':
-          console.log(`STATE_UPDATE ${scannedNode.type.name} ... [truncated]`);
           break;
         case 'image_image-alt-text_link':
           const text = state.doc.sliceString(scannedNode.from, scannedNode.to)
           const match = text.match(ALT_TEXT_REGEX);
-          console.log(text);
-          console.log(match);
           if (match !== null) {
             altText = scannedNode.node;
             generationId = match[1];
@@ -92,36 +85,16 @@ function walkTree(host: Host, builder: RangeSetBuilder<Decoration>, state: Edito
           break;
         case 'string_url':
           const closeParen = scannedNode.node.nextSibling;
-          traceNode(state, scannedNode);
-          traceNode(state, closeParen);
           if (altText === null) {
-            console.log("STATE_UPDATE missing alt text");
             break;
           }
           if (closeParen === null) {
-            console.log("STATE_UPDATE missing alt text");
+            console.log("STATE_UPDATE missing url close parenthesis");
             break;
           }
           imageReferences.push(new ImageReference(state, generationId, altText, scannedNode.node, closeParen));
-          console.log(`STATE_UPDATE building widget at position ${closeParen.to}`);
-
-          builder.add(closeParen.to, closeParen.to, Decoration.widget({ widget: new ButtonWidget(host, imageReferences)}));
-          // XXX HACK testing because this doesn't work when image is alone (there is no cm-line)
-          // builder.add(altText.from - 2, altText.from - 2, Decoration.widget({ widget: new ButtonWidget(imageReferences)}));
+          builder.add(closeParen.to, closeParen.to, Decoration.widget({ widget: new ButtonWidget(host, imageReferences) }));
           break;
-        default:
-          // traceNode(state, scannedNode);
-        // if (node.type.name.startsWith("list")) {
-        //   // Position of the '-' or the '*'.
-        //   const listCharFrom = node.from - 2;
-        //   builder.add(
-        //     listCharFrom,
-        //     listCharFrom + 1,
-        //     Decoration.replace({
-        //       widget: new EmojiWidget(),
-        //     })
-        //   );
-        // }
       }
     },
   });
@@ -129,9 +102,9 @@ function walkTree(host: Host, builder: RangeSetBuilder<Decoration>, state: Edito
 
 function traceNode(state: EditorState, scannedNode: SyntaxNodeRef | null) {
   if (scannedNode === null) {
-    console.log(`STATE_UPDATE null`);
+    console.log(`STATE_FIELD_NODE null`);
     return;
   }
-  console.log(`STATE_UPDATE ${scannedNode!.type?.name} at [${scannedNode!.from}, ${scannedNode!.to}] '${state.doc.sliceString(scannedNode!.from, scannedNode!.to)}'`);
+  console.log(`STATE_FIELD_NODE ${scannedNode!.type?.name} at [${scannedNode!.from}, ${scannedNode!.to}] '${state.doc.sliceString(scannedNode!.from, scannedNode!.to)}'`);
 }
 

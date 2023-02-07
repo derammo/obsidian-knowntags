@@ -7,14 +7,14 @@ import {
 } from "@codemirror/view";
 import { SyntaxNode, SyntaxNodeRef } from '@lezer/common/dist/tree';
 
+import { ViewPluginBase } from "src/derobst/ViewPluginBase";
 import { CommandContext, Host } from "./Plugin";
 
 import * as ImagePromptFromTagsCommand from "src/commands/image_prompt_from_tags/Command";
 import * as KnownTagsCommand from "src/commands/known_tags/Comand";
 import * as CharacterRandomDescription from "src/commands/character_random_description/Command";
 import * as EraseQuote from "src/commands/erase_quote/Command";
-import * as ImageReviewButtons from "src/commands/image_review_buttons/Command";
-import { ViewPluginBase } from "src/derobst/ViewPluginBase";
+import * as ImageSet from "src/commands/image_set/Command";
 
 const REQUIRED_COMMAND_PREFIX = /^\s*!/;
 
@@ -52,7 +52,6 @@ export abstract class CommandsViewPlugin extends ViewPluginBase<Host> {
 							break;
 						case "inline-code": 
 						case "inline-code_quote_quote-1":
-							// console.log(`SCAN_COMMANDS ${scannedNode.type.name} '${view.state.doc.sliceString(scannedNode.from, scannedNode.to)}'`);
 							const commandText = view.state.doc.sliceString(scannedNode.from, scannedNode.to);
 							if (!commandText.match(REQUIRED_COMMAND_PREFIX)) {
 								// all our commands are encoded like this
@@ -77,12 +76,11 @@ export abstract class CommandsViewPlugin extends ViewPluginBase<Host> {
 							if (CommandsViewPlugin.dispatch(EraseQuote.Command, context, scannedNode, commandText)) {
 								return;
 							}
-							if (CommandsViewPlugin.dispatch(ImageReviewButtons.Command, context, scannedNode, commandText)) {
+							if (CommandsViewPlugin.dispatch(ImageSet.Command, context, scannedNode, commandText)) {
 								return;
-							}
+							}							
 							break;
 						default:
-							// console.log(`SEARCH_COMMANDS ${scannedNode.type.name} '${view.state.doc.sliceString(scannedNode.from, scannedNode.to)}'`);
 							if (scannedNode.type.name.startsWith("hashtag_hashtag-end")) {
 								// freeze copy of the node reference
 								tagNode = scannedNode.node;
@@ -95,12 +93,9 @@ export abstract class CommandsViewPlugin extends ViewPluginBase<Host> {
 	}
 
 	static dispatch<T>(commandClass: MinimalCommandClass<T>, context: CommandContext, scannedNode: SyntaxNodeRef, commandText: string): boolean {
-		// console.log(commandClass);
 		if (commandClass.match(commandText)) {
-			// console.log(`DISPATCH matched ${commandText} for ${commandClass.name}`);
 			const command = new commandClass();
 			if (command.parse(commandText, scannedNode)) {
-				// console.log(`DISPATCH building widget for ${commandClass.name}`);
 				command.buildWidget(context);		
 				return true;
 			}

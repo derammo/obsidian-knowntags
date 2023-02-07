@@ -11,21 +11,7 @@ export abstract class CommandWidget<T> extends WidgetType {
 		this.command = command;
 	}
 
-	// XXX remove
-	ignoreEvent(event: Event): boolean {
-		console.log(`EVENT ignore ${event.type}?`);
-		switch (event.type) {
-			case "XXXkeydown":
-				return false;
-			case "XXXbeforeinput":
-				return false;
-			default:
-				return super.ignoreEvent(event);
-		}
-	}
-
-	// XXX remove
-	private debugEventsBrutally(control: HTMLInputElement) {
+	private debugEventsBrutally(control: HTMLElement) {
 		Object.keys((control as any).__proto__.__proto__).forEach((key: string) => {
 			// console.log(`considering ${key}`);
 			if (key.startsWith("on")) {
@@ -34,7 +20,6 @@ export abstract class CommandWidget<T> extends WidgetType {
 		});
 	}
 
-	// XXX remove
 	private debugEventLogger(event: Event) {
 		if (event.type.startsWith('mousemove')) {
 			return;

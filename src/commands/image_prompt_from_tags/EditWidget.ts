@@ -1,6 +1,7 @@
 import { CommandWidget } from "src/derobst/CommandWidget";
 import { EditorView, ParsedCommand, SyntaxNode } from "src/derobst/ParsedCommand";
 import { Host } from "src/main/Plugin";
+import { TextIterator } from "@codemirror/state"
 
 import { ALT_TEXT_PREFIX } from "./Command";
 
@@ -42,18 +43,13 @@ export class EditWidget extends CommandWidget<Host> {
 		this.generated = promptParts.join(", ");
 
 		const control = document.createElement("textarea");
-		
-		// XXX remove
-		// this.debugEventsBrutally(control);
-
 		control.style.flexGrow = "1";
 		control.style.height = "6em";
 
 		control.placeholder = this.generated;
 		this.loadContent(view, control);
 
-		control.addEventListener('change', async (event: Event) => {
-			// console.log("test input");
+		this.host.registerDomEvent(control, "change", async (event: Event) => {
 			let input: string = ((event.target as any)?.value ?? "").trim();
 
 			// if set back to default, store nothing
@@ -61,23 +57,20 @@ export class EditWidget extends CommandWidget<Host> {
 				input = "";
 			}
 
-			// console.log(`writing '${input}'`)
 			this.previousValue = undefined;
 			this.currentValue = input;
 			await this.replaceQuote(view, input);
 		});
-		control.addEventListener('focusin', async (event: Event) => {
-			console.log("focusin");
+
+		this.host.registerDomEvent(control, "focusin", async (_event: Event) => {
 			this.previousValue = control.value;
 			if (control.value.length < 1) {
-				console.log(`loading generated '${this.generated}'`);
 				control.value = this.generated;
 			}
 		});
-		control.addEventListener('focusout', async (event: Event) => {
-			console.log("focusout");
+
+		this.host.registerDomEvent(control, "focusout", async (_event: Event) => {
 			if (this.previousValue !== undefined) {
-				console.log(`restoring '${this.previousValue}'`);
 				control.value = this.previousValue;
 				this.previousValue = undefined;
 			}
@@ -85,7 +78,7 @@ export class EditWidget extends CommandWidget<Host> {
 		return control;
 	}
 
-	// XXX on download, use meta-png or similar library to add prompt used as metadata to the PNG
+	// XXX on download, use meta-png or similar library to add prompt used as metadata to the PNG?
 
 	buildButton(view: EditorView): HTMLElement {
 		const control = document.createElement("button");
@@ -94,18 +87,37 @@ export class EditWidget extends CommandWidget<Host> {
 		control.innerText = "AI draw";
 		control.style.marginLeft = "0.5em";
 
-		control.addEventListener('click', async (event: Event) => {
+		this.host.registerDomEvent(control, "click", async (_event: Event) => {
 			this.host.generateImages(prompt)
 			.then((results: { generationId: string, urls: string[] }) => {
 				// XXX config
 				const presentSize = 256;
-				const chunks: string[] = [ "\n\n" ];
+				let prefix = "\n\n";
+				let insertionLocation: number = this.command.commandNode.to + 1;
+				let walk: TextIterator = view.state.doc.iterRange(insertionLocation);
+				// skip over entire line as enumeration
+				walk.next();
+				if (!walk.done) {
+					if (walk.lineBreak) {
+						// we don't know the size of a LF or CRLF sequence, so we have to measure it like this
+						const offset = walk.value.length;
+						walk.next();
+						if (!walk.done) {
+							if (walk.lineBreak) {
+								// reuse empty line following our command
+								insertionLocation += offset;
+								prefix = "\n";
+							}
+						}
+					}
+				}
+				const chunks: string[] = [ `${prefix}\`!image-set ${results.generationId} ${prompt}\` ` ];
 				results.urls.forEach((url, imageIndex) => {
-					chunks.push(`${imageIndex > 0?" ":""}![${ALT_TEXT_PREFIX}${results.generationId} ${prompt} ${imageIndex + 1}|${presentSize}](${url})`);
+					chunks.push(`${imageIndex > 0?" ":""}![${ALT_TEXT_PREFIX}${results.generationId} ${imageIndex + 1}|${presentSize}](${url})`);
 				});
 
 				view.dispatch({
-					changes: { from: this.command.commandNode.to, to: this.command.commandNode.to, insert: chunks.join("") }
+					changes: { from: insertionLocation, to: insertionLocation, insert: chunks.join("") }
 				});
 
 				// XXX optionally, create an obsidian vault file /DALL-E/${generationId}.md containing the prompt info and links to the images
@@ -118,7 +130,6 @@ export class EditWidget extends CommandWidget<Host> {
 	private loadContent(view: EditorView, control: HTMLTextAreaElement) {
 		const content = view.state.doc.sliceString(this.quoteStart.from + 2, this.quoteEnd.to);
 		if (content.length > 0) {
-			console.log("content loaded");
 			this.currentValue = content;
 			control.value = content;
 		}

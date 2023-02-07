@@ -1,5 +1,5 @@
 import { CommandWidget } from "src/derobst/CommandWidget";
-import { EditorView, ParsedCommand, SyntaxNode } from "src/derobst/ParsedCommand";
+import { EditorView, ParsedCommand } from "src/derobst/ParsedCommand";
 import { Host } from "src/main/Plugin";
 
 import { Configuration, CreateCompletionResponseChoicesInner, OpenAIApi } from "openai";
@@ -28,15 +28,8 @@ export class ButtonWidget extends CommandWidget<Host> {
 	buildButton(view: EditorView): HTMLElement {
 		const control = document.createElement("button");
 		control.innerText = "AI describe";
-		control.addEventListener('click', async (event: Event) => {
-			let active: Promise<void>[] = [];
-			
-			active.push(this.queryDavinci3(view));
-
-			// XXX remove
-			// active = active.concat(this.generateTests(this.prompt));
-
-			Promise.all(active)
+		this.host.registerDomEvent(control, "click", async (_event: Event) => {
+			this.queryDavinci3(view)
 			.then(() => {
 				this.command.handleUsed(view);
 			});
@@ -70,7 +63,7 @@ export class ButtonWidget extends CommandWidget<Host> {
 					return;
 				}
 				
-				value.text.split(/[\n,.;:]/g).forEach((line: string) => {
+				value.text.split(/[\n,;]/g).forEach((line: string) => {
 					let text = line.trim();
 					if (text.length < 1) {
 						return;
@@ -110,26 +103,5 @@ export class ButtonWidget extends CommandWidget<Host> {
 					insert: generated }
 			});			
 		});
-	}
-
-	private generateTests(prompt: string): Promise<void>[] {
-		let active: Promise<void>[] = [];
-		[ "text-ada-001", "text-babbage-001", "text-curie-001", "text-davinci-003" ].forEach((model: string) => {
-			active.push(openai.createCompletion({
-				model: model,
-				prompt: prompt,
-				temperature: 0.9,
-				max_tokens: 100,
-				presence_penalty: 1
-			})
-			.then((response) => {
-				console.log(model);
-				response.data.choices.forEach((value: CreateCompletionResponseChoicesInner) => {
-					console.log(value.text);
-				})
-				console.log(openai);
-			}));
-		})
-		return active;
 	}
 }
