@@ -25,6 +25,8 @@
 	"dependencies": {
 		"@codemirror/language": "^6.4.0",
 		"@codemirror/view": "^6.7.3",
+		"file-type": "^18.2.0",
+		"got": "^12.5.3",
 		"openai": "^3.1.0"
 	}
 }

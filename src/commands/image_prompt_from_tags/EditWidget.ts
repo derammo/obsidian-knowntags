@@ -2,19 +2,19 @@ import { CommandWidget } from "src/derobst/CommandWidget";
 import { EditorView, ParsedCommand, SyntaxNode } from "src/derobst/ParsedCommand";
 import { Host } from "src/main/Plugin";
 
-import { Configuration, CreateCompletionResponseChoicesInner, OpenAIApi } from "openai";
-
-const configuration = new Configuration({
-  apiKey: "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" // process.env.OPENAI_API_KEY,
-});
-
-const openai = new OpenAIApi(configuration);
+import { ALT_TEXT_PREFIX } from "./Command";
 
 export class EditWidget extends CommandWidget<Host> {
 	generated: string;
 	previousValue: string | undefined;
+	currentValue: string = "";
 
-	constructor(host: Host, command: ParsedCommand, public quote: SyntaxNode, public descriptors: Set<string>) {
+	constructor(
+		host: Host, 
+		command: ParsedCommand, 
+		public quoteStart: SyntaxNode, 
+		public quoteEnd: SyntaxNode,
+		public descriptors: Set<string>) {
 		super(host, command);
 	}
 
@@ -39,15 +39,15 @@ export class EditWidget extends CommandWidget<Host> {
 		promptParts.push("colored pencil");
 		promptParts.push("realistic");
 		promptParts.push("white background");
-		this.generated = promptParts.join(",");
+		this.generated = promptParts.join(", ");
 
-		const control = document.createElement("input");
+		const control = document.createElement("textarea");
 		
 		// XXX remove
 		// this.debugEventsBrutally(control);
 
-		control.type = "text";
 		control.style.flexGrow = "1";
+		control.style.height = "6em";
 
 		control.placeholder = this.generated;
 		this.loadContent(view, control);
@@ -61,8 +61,9 @@ export class EditWidget extends CommandWidget<Host> {
 				input = "";
 			}
 
+			// console.log(`writing '${input}'`)
 			this.previousValue = undefined;
-			console.log(`writing '${input}'`)
+			this.currentValue = input;
 			await this.replaceQuote(view, input);
 		});
 		control.addEventListener('focusin', async (event: Event) => {
@@ -84,49 +85,48 @@ export class EditWidget extends CommandWidget<Host> {
 		return control;
 	}
 
+	// XXX on download, use meta-png or similar library to add prompt used as metadata to the PNG
+
 	buildButton(view: EditorView): HTMLElement {
 		const control = document.createElement("button");
-		const prompt = "list 4 physical attributes or articles of clothing of a friendly elven baker, using 2 words for each attribute";
-		// const prompt = "attribute: friendly\nattribute: elven\nattribute: baker\nattribute: ";
+		const prompt = (this.currentValue.length > 0)? this.currentValue: this.generated;
 		
-		control.innerText = "generate";
+		control.innerText = "AI draw";
+		control.style.marginLeft = "0.5em";
+
 		control.addEventListener('click', async (event: Event) => {
-			let active: Promise<void>[] = [];
-		 	[ "text-ada-001", "text-babbage-001", "text-curie-001", "text-davinci-003" ].forEach((model: string) => {
-				active.push(openai.createCompletion({
-					model: model,
-					prompt: prompt,
-					temperature: 0.9,
-					max_tokens: 100,
-					presence_penalty: 1
-				})
-				.then((response) => {
-					console.log(model);
-					response.data.choices.forEach((value: CreateCompletionResponseChoicesInner) => {
-						console.log(value.text);
-					})
-					console.log(openai);
-				}));
-			})
-			Promise.all(active)
-			.then(() => {
-				this.command.handleUsed(view);
-			})
+			this.host.generateImages(prompt)
+			.then((results: { generationId: string, urls: string[] }) => {
+				// XXX config
+				const presentSize = 256;
+				const chunks: string[] = [ "\n\n" ];
+				results.urls.forEach((url, imageIndex) => {
+					chunks.push(`${imageIndex > 0?" ":""}![${ALT_TEXT_PREFIX}${results.generationId} ${prompt} ${imageIndex + 1}|${presentSize}](${url})`);
+				});
+
+				view.dispatch({
+					changes: { from: this.command.commandNode.to, to: this.command.commandNode.to, insert: chunks.join("") }
+				});
+
+				// XXX optionally, create an obsidian vault file /DALL-E/${generationId}.md containing the prompt info and links to the images
+				this.command.handleUsed(view);			
+			});
 		});
 		return control;
 	}
 
-	private loadContent(view: EditorView, control: HTMLInputElement) {
-		const content = view.state.doc.sliceString(this.quote.from + 2, this.quote.to);
+	private loadContent(view: EditorView, control: HTMLTextAreaElement) {
+		const content = view.state.doc.sliceString(this.quoteStart.from + 2, this.quoteEnd.to);
 		if (content.length > 0) {
 			console.log("content loaded");
+			this.currentValue = content;
 			control.value = content;
 		}
 	}
 
 	async replaceQuote(view: EditorView, value: string) {
 		view.dispatch({ 
-			changes: { from: this.quote.from + 2, to: this.quote.to, insert: value }
+			changes: { from: this.quoteStart.from + 2, to: this.quoteEnd.to, insert: value }
 		});
 	}
 }

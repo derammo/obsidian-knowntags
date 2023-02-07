@@ -4,6 +4,7 @@ import { Host } from "src/main/Plugin";
 
 import { Configuration, CreateCompletionResponseChoicesInner, OpenAIApi } from "openai";
 
+// XXX REMOVE, put only in config
 const configuration = new Configuration({
   apiKey: "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" // process.env.OPENAI_API_KEY,
 });
@@ -26,7 +27,7 @@ export class ButtonWidget extends CommandWidget<Host> {
 
 	buildButton(view: EditorView): HTMLElement {
 		const control = document.createElement("button");
-		control.innerText = "describe";
+		control.innerText = "AI describe";
 		control.addEventListener('click', async (event: Event) => {
 			let active: Promise<void>[] = [];
 			
@@ -46,12 +47,12 @@ export class ButtonWidget extends CommandWidget<Host> {
 	private async queryDavinci3(view: EditorView) {
 		// XXX configure number to generate
 		// XXX configure max number of unique ones to offer up
-		const generate_number = 16;
-		const return_number = 8;
+		const generateNumber = 16;
+		const returnNumber = 8;
 		const promptParts: string[] = Array.from(this.descriptors);
 		promptParts.push("using 2 words for each attribute");
 
-		const prompt: string = `list ${generate_number} physical attributes or articles of clothing or equipment of a medieval baker, friendly, elven, female, rich, ${promptParts.join(",")}`;
+		const prompt: string = `list ${generateNumber} physical attributes or articles of clothing or equipment of a medieval ${promptParts.join(", ")}`;
 		console.log(`PROMPT '${prompt}'`);
 
 		return openai.createCompletion({
@@ -97,7 +98,7 @@ export class ButtonWidget extends CommandWidget<Host> {
 			}
 
 			// randomly reduce down to the requested amount
-			while (lines.length > return_number) {
+			while (lines.length > returnNumber) {
 				lines.splice(Math.floor(Math.random() * lines.length), 1);
 			}
 

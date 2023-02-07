@@ -7,6 +7,10 @@ import { DescriptorsCommand } from "../../main/DescriptorsCommand";
 const COMMAND_REGEX = /^\s*!character-random-description(?:\s(.*)|$)/;
 
 export class Command extends DescriptorsCommand {
+	constructor() {
+		super("text");
+	}
+	
 	get regex(): RegExp {
 		return COMMAND_REGEX;
 	}
@@ -17,11 +21,7 @@ export class Command extends DescriptorsCommand {
 
 	buildWidget(context: CommandContext): void {
 		let descriptors = this.createDescriptorsCollection();
-
-		// gather from Description section
 		this.gatherDescriptionSection(descriptors, context);
-
-		// XXX gather from tags
 
 		// create button that will request more descriptors based on these
 		const text = new ButtonWidget(context.plugin, this, descriptors);

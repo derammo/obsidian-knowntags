@@ -1,6 +1,9 @@
-import { Decoration, RangeSetBuilder, ParsedCommand, EditorView } from "src/derobst/ParsedCommand";
+import { MetadataCache, TFile } from "obsidian";
+import { Decoration, ParsedCommand } from "src/derobst/ParsedCommand";
 import { ParsedCommandWithSettings } from "src/derobst/ParsedCommandWithSettings";
+import { MinimalPlugin } from "src/derobst/ViewPluginBase";
 import { KnownTagsCache } from "./KnownTagsCache";
+import { ViewPluginContextBase } from "../derobst/ViewPluginContextBase";
 
 export interface Settings {
     tagsFolder: string;
@@ -15,20 +18,20 @@ export const DEFAULT_SETTINGS: Settings = {
 };
 
 // stable services our plugin provides to its components
-export interface Host {
+export interface Host extends MinimalPlugin {
     cache: KnownTagsCache;
     settings: Settings;
     settingsDirty: boolean;
+    metadataCache: MetadataCache;
+
+	generateImages(prompt: string): Promise<{ generationId: string; urls: string[]; }>; 
+	createFileFromBuffer(arg0: string, buffer: Buffer): Promise<TFile>;
 };
 
 // services used during construction of decorations for a particular inline code command
-export class CommandContext {
-    builder: RangeSetBuilder<Decoration>;
-    plugin: Host;
-    view: EditorView;
-
+export class CommandContext extends ViewPluginContextBase<Host> {
     public constructor(fields?: Partial<CommandContext>) {
-        Object.assign(this, fields);
+        super(fields);
     }
 
     calculateUnfocusedStyle(command: ParsedCommandWithSettings): { hide: boolean; dim: boolean; } {
@@ -67,4 +70,4 @@ export class CommandContext {
             builder.add(command.commandNode.from, command.commandNode.to, Decoration.mark({ attributes: { "class": "known-tags" } }));
         }
     }
-}    
+}

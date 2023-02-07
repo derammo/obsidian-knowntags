@@ -14,7 +14,7 @@ export class ComboBoxWidget extends WidgetBase {
 		const span = document.createElement("span");
 		const tag = this.getTag(view);
 		const topLevel = this.host.cache.getTopLevel(tag);
-		if (topLevel !== undefined) {
+		if (topLevel !== null) {
 			const datalistId = `TagComboBoxWidget datalist ${topLevel}`;
 			const datalist = document.createElement("datalist");
 			datalist.id = datalistId;

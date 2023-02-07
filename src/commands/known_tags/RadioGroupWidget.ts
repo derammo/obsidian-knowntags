@@ -10,7 +10,7 @@ export class RadioGroupWidget extends WidgetBase {
 	toDOM(view: EditorView): HTMLElement {
 		const span = document.createElement("span");
 		const topLevel = this.host.cache.getTopLevel(this.getTag(view));
-		if (topLevel !== undefined) {
+		if (topLevel !== null) {
 			// console.log(`generating buttons for top-level tag '${topLevel}'`);
 			this.host.cache.getChoices(topLevel).forEach((subpath: string) => {
 				// console.log(`generating button for tag '${topLevel}/${subpath}'`);

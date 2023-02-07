@@ -1,19 +1,37 @@
-import { App, CachedMetadata, Editor, MarkdownPostProcessorContext, MarkdownView, Modal, Notice, Plugin, TFile } from 'obsidian';
 import {
 	PluginSpec,
 	ViewPlugin
 } from "@codemirror/view";
-import { KnownTagsCache } from './KnownTagsCache';
-import { CommandsViewPlugin } from './CommandsViewPlugin';
-import { SettingTab } from './SettingTab';
+import { App, CachedMetadata, Editor, MarkdownPostProcessorContext, MarkdownView, MetadataCache, Modal, Notice, Plugin, TFile } from 'obsidian';
+import { Configuration, ImagesResponseDataInner, OpenAIApi } from "openai";
+
 import * as KnownTagsCommand from 'src/commands/known_tags/Comand';
+import { KnownTagsCache } from './KnownTagsCache';
+import { SettingTab } from './SettingTab';
+
 import { DEFAULT_SETTINGS, Host, Settings } from './Plugin';
 
-export class KnownTagsPlugin extends Plugin {
+import { CommandsViewPlugin } from './CommandsViewPlugin';
+import { GeneratedImagesViewPlugin } from '../image_generation/GeneratedImagesViewPlugin';
+import { createGeneratedImagesDecorationsStateField } from "src/image_generation/StateField";
+
+// XXX remove and only take from config
+const configuration = new Configuration({
+  apiKey: "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" // process.env.OPENAI_API_KEY,
+});
+
+const openai = new OpenAIApi(configuration);
+
+export class KnownTagsPlugin extends Plugin implements Host {
 	cache: KnownTagsCache;
-	viewExtension: ViewPlugin<CommandsViewPlugin>;
+	commandsView: ViewPlugin<CommandsViewPlugin>;
 	settings: Settings;
 	settingsDirty: boolean = false;
+	generatedImagesView: ViewPlugin<CommandsViewPlugin>;
+
+	get metadataCache(): MetadataCache {
+		return this.app.metadataCache;
+	}
 
 	async onload() {
 		await this.loadSettings();
@@ -101,27 +119,41 @@ export class KnownTagsPlugin extends Plugin {
 		this.registerMarkdownPostProcessor(
 			async (element: HTMLElement, context: MarkdownPostProcessorContext) => this.onMarkDownPostProcessing(element, context));
 
-		// special view plugin (may need state field also, if we grow stuff vertically)
-		const knownTagsViewSpec: PluginSpec<CommandsViewPlugin> = {
-			decorations: (value: CommandsViewPlugin) => value.decorations,
-		};
-		const host: Host = this;
-		this.viewExtension = ViewPlugin.fromClass(class extends CommandsViewPlugin {
-			getPlugin(): Host {
-				return host;
-			}
-		}, knownTagsViewSpec);
-		this.registerEditorExtension(this.viewExtension);
-
-		app.workspace.on("codemirror", (cmEditor: CodeMirror.Editor) => this.onCodeMirrorEvent(cmEditor));
+		// view plugins (may need state field also, if we grow stuff vertically too much)
+		this.registerCommandsView();
+		this.registerGeneratedImagesView();
+		this.registerEditorExtension(createGeneratedImagesDecorationsStateField(this));
 
 		app.workspace.onLayoutReady(() => {
+			// usually this has already happend from a view plugin running before layout is ready
 			this.cache.initialize();
 		});
 	}
 
-	onCodeMirrorEvent(cmEditor: CodeMirror.Editor) {
-		console.log("code mirror event");
+	private registerGeneratedImagesView() {
+		const generateImagesSpec: PluginSpec<CommandsViewPlugin> = {
+			decorations: (value: CommandsViewPlugin) => value.decorations,
+		};
+		const host = this;
+		this.generatedImagesView = ViewPlugin.fromClass(class extends GeneratedImagesViewPlugin {
+			getPlugin(): Host {
+				return host;
+			}
+		}, generateImagesSpec);
+		this.registerEditorExtension(this.generatedImagesView);
+	}
+
+	private registerCommandsView() {
+		const commandsSpec: PluginSpec<CommandsViewPlugin> = {
+			decorations: (value: CommandsViewPlugin) => value.decorations,
+		};
+		const host: Host = this;
+		this.commandsView = ViewPlugin.fromClass(class extends CommandsViewPlugin {
+			getPlugin(): Host {
+				return host;
+			}
+		}, commandsSpec);
+		this.registerEditorExtension(this.commandsView);
 	}
 
 	onMarkDownPostProcessing(element: HTMLElement, _context: MarkdownPostProcessorContext): any {
@@ -150,6 +182,43 @@ export class KnownTagsPlugin extends Plugin {
 		this.settingsDirty = true;
 		await this.saveData(this.settings);
 		this.app.workspace.updateOptions();
+	}
+
+	async generateImages(prompt: string): Promise<{ generationId: string; urls: string[]; }> {
+		return openai.createImage({
+			prompt: prompt,
+			// XXX config
+			n: 4,
+			size: "256x256",
+			response_format: "url"
+		})
+		.then((response) => {
+			// console.log(response);
+			let generationId: string | undefined = undefined;
+			const urls: string[] = [];
+			response.data.data.forEach((image: ImagesResponseDataInner) => {
+				if (image.url === undefined) {
+					return;
+				}
+				urls.push(image.url);
+				const match = (image.url ?? "").match(/st=([0-9-T%AZ]+)(?:&|$)/);
+				if (match !== null) {
+					if (generationId === undefined) {
+						// unescape URL
+						generationId = decodeURIComponent(match[1]);
+					} else {
+						if (generationId !== decodeURIComponent(match[1])) {
+							console.log(`ERROR: mismatched generation id '${generationId}' vs '${decodeURIComponent(match[1])}'`);
+						}
+					}
+				}
+			});
+			return { generationId: generationId ?? "", urls: urls };
+		});
+	}
+
+	async createFileFromBuffer(path: string, buffer: Buffer): Promise<TFile> {
+		return app.vault.createBinary(path, buffer);
 	}
 }
 

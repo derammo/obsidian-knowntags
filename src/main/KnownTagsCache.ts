@@ -1,7 +1,7 @@
 import { CachedMetadata, Notice, TFile } from 'obsidian';
 
 export class TagInfo {
-	[key: string] : {}
+	[key: string] : any;
 }
 
 export class KnownTagsCache {
@@ -67,16 +67,37 @@ export class KnownTagsCache {
 			});
 		});
 		this.data = tagsDict;
-		console.log(this.data);
+		// console.log(this.data);
 	}
 
-	getTopLevel(tag: string): string | undefined {
+	getTopLevel(tag: string): string | null {
 		this.initialize();
 		const slash = tag.indexOf("/");
 		if (slash < 1) {
-			return undefined;
+			return null;
 		}
 		return tag.slice(0, slash);
+	}
+
+	getMetadata(tag: string, frontMatterSection: string): any | null {
+		const slash = tag.indexOf("/");
+		if (slash < 1) {
+			return null;
+		}
+		const topLevel = tag.slice(0, slash);
+		if (!this.data.hasOwnProperty(topLevel)) {
+			return null;
+		}
+		const topData = this.data[topLevel];
+		const subPath = tag.slice(slash + 1);
+		if (!topData.hasOwnProperty(subPath)) {
+			return null;
+		}
+		const subData: TagInfo = topData[subPath];
+		if (!subData.hasOwnProperty(frontMatterSection)) {
+			return null;
+		}
+		return subData[frontMatterSection];
 	}
 
 	getChoices(topLevel: string): string[] {
