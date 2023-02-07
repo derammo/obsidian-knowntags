@@ -12,11 +12,11 @@ import { createGeneratedImagesDecorationsStateField } from "src/image_generation
 import { CommandsViewPlugin } from './CommandsViewPlugin';
 
 // XXX remove and only take from config
-const configuration = new Configuration({
-  apiKey: "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" // process.env.OPENAI_API_KEY,
+const openaiConfiguration = new Configuration({
+	apiKey: "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" // process.env.OPENAI_API_KEY,
 });
-
-const openai = new OpenAIApi(configuration);
+   
+export const openai = new OpenAIApi(openaiConfiguration);
 
 export class KnownTagsPlugin extends Plugin implements Host {
 	cache: KnownTagsCache;

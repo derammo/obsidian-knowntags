@@ -63,6 +63,7 @@ export class KnownTagsCache {
 					return;
 				}
 				tagRecord[subPath] = tagDefinitions[key];
+				console.log(`${tag}/${subPath}: ${JSON.stringify(tagDefinitions[key])}`);
 			});
 		});
 		this.data = tagsDict;

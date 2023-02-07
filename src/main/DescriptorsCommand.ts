@@ -24,39 +24,53 @@ export abstract class DescriptorsCommand extends ParsedCommandWithSettings {
 	}
 
 	private gatherDescriptorsFromTags(descriptors: Set<string>, descriptionHeader: SyntaxNode, context: CommandContext): boolean {
+		console.log(`Looking for descriptors from tags`);
 		const currentFile = context.view.state.field(editorInfoField).file;
-		if (currentFile !== null) {
-			const meta = context.plugin.metadataCache.getFileCache(currentFile);
-			// if (meta !== null) {
-			// 	getAllTags(context.plugin.metadataCache.getFileCache(currentFile)!)?.forEach((value: string) => {
-			//		// this also includes tags from frontmatter
-			// 	});
-			// }
-			if (meta?.tags !== null) {
-				const sectionStart = descriptionHeader.to;
-				const sectionEnd = this.commandNode.from;
-				meta?.tags?.forEach((tag: TagCache) => {
-					if (tag.position.start.offset >= sectionStart && tag.position.end.offset < sectionEnd) {
-						// look up out own meta info about it
-						const info = context.plugin.cache.getMetadata(tag.tag.slice(1), this.frontMatterSection);
-						if (info !== null && info.hasOwnProperty("prompt")) {
-							if (info!.prompt !== null && info!.prompt.length > 0) {
-								// explicitly null or empty prompt means ignore this
-								descriptors.add(info!.prompt);
-							}
-						} else {
-							const slash = tag.tag.indexOf("/");
-							if (slash >= 0) {
-								// just use the subpath, as long as the top level tag is registered
-								const prompt = tag.tag.slice(slash + 1);
-								descriptors.add(prompt);
-							}
-						}
-					}
-				});
+		if (currentFile === null) {
+			console.log(`No current file; cannot fetch tags from prompt`);
+			return false;
+		}
+		const meta = context.plugin.metadataCache.getFileCache(currentFile);
+		// if (meta !== null) {
+		// 	getAllTags(context.plugin.metadataCache.getFileCache(currentFile)!)?.forEach((value: string) => {
+		//		// this also includes tags from frontmatter
+		// 	});
+		// }
+		if (meta?.tags === null) {
+			console.log(`No tags metadata in file '${currentFile.path}'; cannot fetch tags from prompt`);
+			return false;
+		}
+		const sectionStart = descriptionHeader.to;
+		const sectionEnd = this.commandNode.from;
+		for (let tag of meta?.tags!) {
+			console.log(`tag ${tag.tag} in file '${currentFile.path}'`);
+			if (tag.position.start.offset >= sectionEnd) {
+				console.log(`ignoring tag ${tag.tag} beyond section ${this.calculateDescriptionHeaderName(context)} in file '${currentFile.path}'`);
+				continue;
+			} 
+			if (tag.position.end.offset < sectionStart) {
+				console.log(`ignoring tag ${tag.tag} appearing before section ${this.calculateDescriptionHeaderName(context)} in file '${currentFile.path}'`);
+				continue;
+			} 
+			// look up out own meta info about it
+			const info = context.plugin.cache.getMetadata(tag.tag.slice(1), this.frontMatterSection);
+			if (info !== null && info.hasOwnProperty("prompt")) {
+				if (info!.prompt !== null && info!.prompt.length > 0) {
+					// explicitly null or empty prompt means ignore this
+					console.log(`Adding prompt ${info!.prompt} for tag ${tag.tag}`)
+					descriptors.add(info!.prompt);
+				}
+			} else {
+				console.log(`Adding default prompt for tag ${tag.tag}`)
+				const slash = tag.tag.indexOf("/");
+				if (slash >= 0) {
+					// just use the subpath, as long as the top level tag is registered
+					const prompt = tag.tag.slice(slash + 1);
+					descriptors.add(prompt);
+				}
 			}
 		}
-		return false;
+		return ((meta?.tags?.length ?? 0) > 0);
 	}
 
 	private findDescriptionHeader(context: CommandContext): SyntaxNode | null {

@@ -2,14 +2,8 @@ import { CommandWidget } from "src/derobst/CommandWidget";
 import { EditorView, ParsedCommand } from "src/derobst/ParsedCommand";
 import { Host } from "src/main/Plugin";
 
-import { Configuration, CreateCompletionResponseChoicesInner, OpenAIApi } from "openai";
-
-// XXX REMOVE, put only in config
-const configuration = new Configuration({
-  apiKey: "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" // process.env.OPENAI_API_KEY,
-});
-
-const openai = new OpenAIApi(configuration);
+import { CreateCompletionResponseChoicesInner } from "openai";
+import { openai } from "src/main/PluginImplementation";
 
 export class ButtonWidget extends CommandWidget<Host> {
 	generated: string;
