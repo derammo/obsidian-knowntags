@@ -1,12 +1,12 @@
-import { EditorView, ParsedCommand, SyntaxNode } from "src/derobst/ParsedCommand";
-import { Host } from "src/main/Plugin";
+import { EditorView, ParsedCommand, SyntaxNode } from "derobst/command";
+import { Host } from "main/Plugin";
 import { WidgetBase } from './WidgetBase';
 
 export class ComboBoxWidget extends WidgetBase {
 	initialValue: string;
 	previousValue: string | undefined = undefined
 
-	constructor(host: Host, tagNode: SyntaxNode, command: ParsedCommand) {
+	constructor(host: Host, tagNode: SyntaxNode, command: ParsedCommand<Host>) {
 		super(host, tagNode, command);
 	}
 

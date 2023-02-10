@@ -1,10 +1,11 @@
-import { editorInfoField, getAllTags, MetadataCache, TagCache } from "obsidian";
-import { HEADER_NODE_PREFIX, QUOTE_NODE_PREFIX, QUOTE_REGEX } from "src/derobst/ObsidianInternals";
-import { SyntaxNode } from "src/derobst/ParsedCommand";
-import { ParsedCommandWithSettings } from "src/derobst/ParsedCommandWithSettings";
-import { CommandContext } from "src/main/Plugin";
+import { SyntaxNode } from "derobst/command";
+import { ParsedCommandWithParameters } from "derobst/command";
+import { HEADER_NODE_PREFIX, QUOTE_NODE_PREFIX, QUOTE_REGEX } from "derobst/internals";
+import { ViewPluginContext } from "derobst/view";
+import { editorInfoField } from "obsidian";
+import { Host } from "./Plugin";
 
-export abstract class DescriptorsCommand extends ParsedCommandWithSettings {
+export abstract class DescriptorsCommand extends ParsedCommandWithParameters<Host> {
 	constructor(private frontMatterSection: string) {
 		super();
 	}
@@ -13,7 +14,7 @@ export abstract class DescriptorsCommand extends ParsedCommandWithSettings {
 		return new Set<string>();
 	}
 
-	protected gatherDescriptionSection(descriptors: Set<string>, context: CommandContext): boolean {
+	protected gatherDescriptionSection(descriptors: Set<string>, context: ViewPluginContext<Host>): boolean {
 		const descriptionHeader: SyntaxNode | null = this.findDescriptionHeader(context);
 		if (descriptionHeader !== null) {
 			this.gatherDescriptorsFromTags(descriptors, descriptionHeader, context);
@@ -23,11 +24,9 @@ export abstract class DescriptorsCommand extends ParsedCommandWithSettings {
 		return false;
 	}
 
-	private gatherDescriptorsFromTags(descriptors: Set<string>, descriptionHeader: SyntaxNode, context: CommandContext): boolean {
-		console.log(`Looking for descriptors from tags`);
-		const currentFile = context.view.state.field(editorInfoField).file;
+	private gatherDescriptorsFromTags(descriptors: Set<string>, descriptionHeader: SyntaxNode, context: ViewPluginContext<Host>): boolean {
+		const currentFile = context.state.field(editorInfoField).file;
 		if (currentFile === null) {
-			console.log(`No current file; cannot fetch tags from prompt`);
 			return false;
 		}
 		const meta = context.plugin.metadataCache.getFileCache(currentFile);
@@ -37,19 +36,15 @@ export abstract class DescriptorsCommand extends ParsedCommandWithSettings {
 		// 	});
 		// }
 		if (meta?.tags === null) {
-			console.log(`No tags metadata in file '${currentFile.path}'; cannot fetch tags from prompt`);
 			return false;
 		}
 		const sectionStart = descriptionHeader.to;
 		const sectionEnd = this.commandNode.from;
 		for (let tag of meta?.tags!) {
-			console.log(`tag ${tag.tag} in file '${currentFile.path}'`);
 			if (tag.position.start.offset >= sectionEnd) {
-				console.log(`ignoring tag ${tag.tag} beyond section ${this.calculateDescriptionHeaderName(context)} in file '${currentFile.path}'`);
 				continue;
 			} 
 			if (tag.position.end.offset < sectionStart) {
-				console.log(`ignoring tag ${tag.tag} appearing before section ${this.calculateDescriptionHeaderName(context)} in file '${currentFile.path}'`);
 				continue;
 			} 
 			// look up out own meta info about it
@@ -57,11 +52,9 @@ export abstract class DescriptorsCommand extends ParsedCommandWithSettings {
 			if (info !== null && info.hasOwnProperty("prompt")) {
 				if (info!.prompt !== null && info!.prompt.length > 0) {
 					// explicitly null or empty prompt means ignore this
-					console.log(`Adding prompt ${info!.prompt} for tag ${tag.tag}`)
 					descriptors.add(info!.prompt);
 				}
 			} else {
-				console.log(`Adding default prompt for tag ${tag.tag}`)
 				const slash = tag.tag.indexOf("/");
 				if (slash >= 0) {
 					// just use the subpath, as long as the top level tag is registered
@@ -73,14 +66,14 @@ export abstract class DescriptorsCommand extends ParsedCommandWithSettings {
 		return ((meta?.tags?.length ?? 0) > 0);
 	}
 
-	private findDescriptionHeader(context: CommandContext): SyntaxNode | null {
+	private findDescriptionHeader(context: ViewPluginContext<Host>): SyntaxNode | null {
 		let scan: SyntaxNode | null = this.commandNode;
 		const targetHeaderMatch = new RegExp(`^#+\\s+${this.calculateDescriptionHeaderName(context)}`);
 
 		while (scan !== null) {
 			if (scan.type.name.startsWith(HEADER_NODE_PREFIX)) {
 				// check for description name and when we find it, inhale that section
-				const value = context.view.state.doc.sliceString(scan.from, scan.to);
+				const value = context.state.doc.sliceString(scan.from, scan.to);
 				if (value.match(targetHeaderMatch)) {
 					return scan;
 				}
@@ -90,14 +83,14 @@ export abstract class DescriptorsCommand extends ParsedCommandWithSettings {
 		return null;
 	}
 
-	private ingestDescriptionSection(descriptors: Set<string>, descriptionHeader: SyntaxNode, context: CommandContext): void {
-		const startHeader = context.view.state.doc.sliceString(descriptionHeader.from, descriptionHeader.to);
+	private ingestDescriptionSection(descriptors: Set<string>, descriptionHeader: SyntaxNode, context: ViewPluginContext<Host>): void {
+		const startHeader = context.state.doc.sliceString(descriptionHeader.from, descriptionHeader.to);
 
 		// scan forward from there to where we started or until we find a heading with equal or lower heading level
 		let ingest: SyntaxNode | null = descriptionHeader;
 		while (ingest !== null) {
 			if (ingest.type.name.startsWith(QUOTE_NODE_PREFIX)) {
-				const quote = context.view.state.doc.sliceString(ingest.from, ingest.to);
+				const quote = context.state.doc.sliceString(ingest.from, ingest.to);
 				const match = quote.match(QUOTE_REGEX);
 				if (match !== null) {
 					const descriptor = match[1].trim();
@@ -114,11 +107,11 @@ export abstract class DescriptorsCommand extends ParsedCommandWithSettings {
 		}
 	}
 
-	private calculateDescriptionHeaderName(context: CommandContext): string {
+	private calculateDescriptionHeaderName(context: ViewPluginContext<Host>): string {
 		// XXX default from plugin settings
 		let name: string = "Description";
-		if (this.settings.header) {
-			name = this.settings.header.toString();
+		if (this.parameters.header) {
+			name = this.parameters.header.toString();
 		}
 		return name;
 	}

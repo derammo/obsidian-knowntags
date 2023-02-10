@@ -1,11 +1,10 @@
-import { EditorView, ParsedCommand, SyntaxNode } from "src/derobst/ParsedCommand";
-import { CommandWidget } from "src/derobst/CommandWidget";
-import { Host } from "src/main/Plugin";
+import { CommandWidgetBase, EditorView, ParsedCommand, SyntaxNode } from "derobst/command";
+import { Host } from "main/Plugin";
 
-export abstract class WidgetBase extends CommandWidget<Host> {
+export abstract class WidgetBase extends CommandWidgetBase<Host> {
 	tagNode: SyntaxNode;
 
-	constructor(host: Host, tagNode: SyntaxNode, command: ParsedCommand) {
+	constructor(host: Host, tagNode: SyntaxNode, command: ParsedCommand<Host>) {
 		super(host, command);
 		this.tagNode = tagNode;
 	}

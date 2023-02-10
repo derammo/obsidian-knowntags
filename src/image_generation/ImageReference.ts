@@ -1,12 +1,15 @@
 import { EditorState } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
 import { SyntaxNode } from "@lezer/common";
-import { Host } from "src/main/Plugin";
+import { syntaxTree } from "@codemirror/language";
+
+import { TFile } from "obsidian";
 
 import * as got from "got";
+
 import { fileTypeFromBuffer, FileTypeResult } from "file-type";
-import { TFile } from "obsidian";
-import { syntaxTree } from "@codemirror/language";
+
+import { Host } from "main/Plugin";
 
 export class ImageReference {
   from: number;
@@ -118,6 +121,7 @@ export class ImageReference {
     // replace all image references, in reverse order
     urls.reduceRight((_, url: SyntaxNode) => {
       view.dispatch({ changes: { from: url.from, to: url.to, insert: file.path } });
-    }, null);
+      return url;
+    });
   }
 }

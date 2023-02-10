@@ -1,8 +1,10 @@
-import { Decoration, SyntaxNode, } from "src/derobst/ParsedCommand";
+import { Decoration } from "derobst/command";
 
-import { CommandContext } from "src/main/Plugin";
 import { ButtonWidget } from "./ButtonWidget";
 import { DescriptorsCommand } from "../../main/DescriptorsCommand";
+import { ViewPluginContext } from "derobst/view";
+import { Host } from "main/Plugin";
+import { WidgetFormatter } from "main/WidgetFormatter";
 
 const COMMAND_REGEX = /^\s*!character-random-description(?:\s(.*)|$)/;
 
@@ -19,15 +21,14 @@ export class Command extends DescriptorsCommand {
 		return text.match(COMMAND_REGEX) !== null;
 	}
 
-	buildWidget(context: CommandContext): void {
+	buildWidget(context: ViewPluginContext<Host>): void {
 		let descriptors = this.createDescriptorsCollection();
 		this.gatherDescriptionSection(descriptors, context);
 
 		// create button that will request more descriptors based on these
 		const text = new ButtonWidget(context.plugin, this, descriptors);
 		context.builder.add(this.commandNode.from-1, this.commandNode.from-1, Decoration.widget({ widget: text }));
-		context.markBasedOnSettings(this);
+		WidgetFormatter.markBasedOnParameters(context, this);
 	}
 }
-
 

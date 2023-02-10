@@ -1,8 +1,12 @@
-import { HEADER_NODE_PREFIX, QUOTE_NODE_CONTAINING_COMMAND_PREFIX, QUOTE_NODE_PREFIX, QUOTE_TEXT_NODE_PREFIX } from "src/derobst/ObsidianInternals";
-import { Decoration, SyntaxNode } from "src/derobst/ParsedCommand";
-import { DescriptorsCommand } from "src/main/DescriptorsCommand";
+import { Decoration } from '@codemirror/view';
+import { SyntaxNode } from '@lezer/common/dist/tree';
 
-import { CommandContext } from "src/main/Plugin";
+import { HEADER_NODE_PREFIX, QUOTE_NODE_CONTAINING_COMMAND_PREFIX, QUOTE_NODE_PREFIX, QUOTE_TEXT_NODE_PREFIX } from "derobst/internals";
+import { ViewPluginContext } from 'derobst/view';
+import { DescriptorsCommand } from "main/DescriptorsCommand";
+import { Host } from 'main/Plugin';
+import { WidgetFormatter } from 'main/WidgetFormatter';
+
 import { EditWidget } from "./EditWidget";
 
 // generated images can be recognized from this prefix in their ![alt text](url)
@@ -23,7 +27,7 @@ export class Command extends DescriptorsCommand {
 		return text.match(COMMAND_REGEX) !== null;
 	}
 
-	buildWidget(context: CommandContext): void {
+	buildWidget(context: ViewPluginContext<Host>): void {
 		let scan: SyntaxNode | null = this.commandNode;
 		let quoteEnd: SyntaxNode | null = null;
 		while (scan !== null) {
@@ -58,7 +62,7 @@ export class Command extends DescriptorsCommand {
 		if (quoteEnd === null) {
 			quoteEnd = quoteStart;
 		}
-		const quoteText = context.view.state.doc.sliceString(quoteStart.from, quoteEnd.to);
+		const quoteText = context.state.doc.sliceString(quoteStart.from, quoteEnd.to);
 		if (!quoteText.startsWith("> ")) {
 			// don't work on stuff that has been disturbed too much
 			return;
@@ -69,7 +73,7 @@ export class Command extends DescriptorsCommand {
 
 		const text = new EditWidget(context.plugin, this, quoteStart, quoteEnd, descriptors);
 		context.builder.add(quoteStart.from, this.commandNode.from, Decoration.replace({ widget: text }));
-		context.markBasedOnSettings(this);
+		WidgetFormatter.markBasedOnParameters(context, this);
 	}
 }
 

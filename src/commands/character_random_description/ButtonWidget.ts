@@ -1,15 +1,14 @@
-import { CommandWidget } from "src/derobst/CommandWidget";
-import { EditorView, ParsedCommand } from "src/derobst/ParsedCommand";
-import { Host } from "src/main/Plugin";
+import { CommandWidgetBase, EditorView, ParsedCommand } from "derobst/command";
+import { Host } from "main/Plugin";
 
+import { openai } from "main/PluginImplementation";
 import { CreateCompletionResponseChoicesInner } from "openai";
-import { openai } from "src/main/PluginImplementation";
 
-export class ButtonWidget extends CommandWidget<Host> {
+export class ButtonWidget extends CommandWidgetBase<Host> {
 	generated: string;
 	previousValue: string | undefined;
 
-	constructor(host: Host, command: ParsedCommand, public descriptors: Set<string>) {
+	constructor(host: Host, command: ParsedCommand<Host>, public descriptors: Set<string>) {
 		super(host, command);
 	}
 
@@ -75,7 +74,6 @@ export class ButtonWidget extends CommandWidget<Host> {
 						return;
 					} 
 					lines.push(`> ${text} \`!erase-quote\``);
-					console.log(`GENERATE '${text}'`);
 				})
 			})
 

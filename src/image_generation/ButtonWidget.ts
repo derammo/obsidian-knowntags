@@ -1,8 +1,8 @@
 import { WidgetType } from "@codemirror/view";
-import { EditorView, SyntaxNode } from "src/derobst/ParsedCommandWithSettings";
-import { ImageReference } from "./ImageReference";
-import { Host } from "src/main/Plugin";
 import { TFile } from "obsidian";
+import { EditorView } from "derobst/command";
+import { Host } from "main/Plugin";
+import { ImageReference } from "./ImageReference";
 
 export class ButtonWidget extends WidgetType {
 	height: number | undefined;
@@ -74,7 +74,8 @@ export class ButtonWidget extends WidgetType {
 			// erase all image references, in reverse order
 			this.imageReferences.reduceRight((_, imageReference: ImageReference) => {
 				imageReference.erase(view);
-			}, null);
+				return imageReference;
+			});
 
 			// make sure we secure the file
 			const file: TFile = await this.imageReference.downloadRemoteImage(host, view);

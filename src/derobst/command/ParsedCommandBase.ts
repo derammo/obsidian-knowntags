@@ -1,14 +1,22 @@
 import { EditorView } from '@codemirror/view';
 import { SyntaxNode, SyntaxNodeRef } from '@lezer/common/dist/tree';
 
-// export these to our clients so they don't have to go find them
-export { RangeSetBuilder } from "@codemirror/state";
-export { Decoration } from "@codemirror/view";
-export type { SyntaxNode } from '@lezer/common/dist/tree';
-export type { EditorView } from '@codemirror/view';
+import { MinimalPlugin } from 'derobst/interfaces';
+import { ViewPluginContext } from 'derobst/view';
 
-export abstract class  ParsedCommand {
+import { MinimalCommand } from './CommandDispatcher';
+
+export abstract class ParsedCommand<THostPlugin extends MinimalPlugin> implements MinimalCommand<THostPlugin> {
+    abstract buildWidget(context: ViewPluginContext<THostPlugin>): void;
     abstract get regex(): RegExp;
+
+    static get observer(): boolean { 
+        return false; 
+    }
+
+    observe(_node: SyntaxNodeRef) {
+        // no code
+    }
 
     // WARNING: this is only stable as long as the document does not change, because it contains offsets into the text
     commandNode: SyntaxNode;

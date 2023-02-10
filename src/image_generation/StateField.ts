@@ -11,8 +11,8 @@ import {
 } from "@codemirror/view";
 import { SyntaxNode, SyntaxNodeRef } from "@lezer/common";
 import { editorLivePreviewField } from "obsidian";
-import { ALT_TEXT_PREFIX } from "src/commands/image_prompt_from_tags/Command";
-import { Host } from "src/main/Plugin";
+import { ALT_TEXT_PREFIX } from "commands/image_prompt_from_tags/Command";
+import { Host } from "main/Plugin";
 import { ButtonWidget } from "./ButtonWidget";
 import { ImageReference } from "./ImageReference";
 

@@ -1,18 +1,17 @@
-import { CommandWidget } from "src/derobst/CommandWidget";
-import { EditorView, ParsedCommand, SyntaxNode } from "src/derobst/ParsedCommand";
-import { Host } from "src/main/Plugin";
-import { TextIterator } from "@codemirror/state"
+import { TextIterator } from "@codemirror/state";
+import { CommandWidgetBase, EditorView, ParsedCommand, SyntaxNode } from "derobst/command";
+import { Host } from "main/Plugin";
 
 import { ALT_TEXT_PREFIX } from "./Command";
 
-export class EditWidget extends CommandWidget<Host> {
+export class EditWidget extends CommandWidgetBase<Host> {
 	generated: string;
 	previousValue: string | undefined;
 	currentValue: string = "";
 
 	constructor(
 		host: Host, 
-		command: ParsedCommand, 
+		command: ParsedCommand<Host>, 
 		public quoteStart: SyntaxNode, 
 		public quoteEnd: SyntaxNode,
 		public descriptors: Set<string>) {

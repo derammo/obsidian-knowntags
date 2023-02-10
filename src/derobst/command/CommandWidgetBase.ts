@@ -1,11 +1,12 @@
 import { WidgetType } from "@codemirror/view";
-import { ParsedCommand } from "src/derobst/ParsedCommand";
+import { MinimalPlugin } from "derobst/interfaces";
+import { ParsedCommand } from "./ParsedCommandBase";
 
-export abstract class CommandWidget<T> extends WidgetType {
-	host: T;
-	command: ParsedCommand;
+export abstract class CommandWidgetBase<THostPlugin extends MinimalPlugin> extends WidgetType {
+	host: THostPlugin;
+	command: ParsedCommand<THostPlugin>;
 
-	constructor(host: T, command: ParsedCommand) {
+	constructor(host: THostPlugin, command: ParsedCommand<THostPlugin>) {
 		super();
 		this.host = host;
 		this.command = command;
@@ -13,7 +14,6 @@ export abstract class CommandWidget<T> extends WidgetType {
 
 	private debugEventsBrutally(control: HTMLElement) {
 		Object.keys((control as any).__proto__.__proto__).forEach((key: string) => {
-			// console.log(`considering ${key}`);
 			if (key.startsWith("on")) {
 				control.addEventListener(key.slice(2), this.debugEventLogger);
 			}

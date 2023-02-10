@@ -1,9 +1,8 @@
-import { CommandWidget } from "src/derobst/CommandWidget";
-import { EditorView, ParsedCommand, SyntaxNode } from "src/derobst/ParsedCommand";
-import { Host } from "src/main/Plugin";
+import { CommandWidgetBase, EditorView, ParsedCommand, SyntaxNode } from "derobst/command";
+import { Host } from "main/Plugin";
 
-export class ButtonWidget extends CommandWidget<Host> {
-	constructor(host: Host, command: ParsedCommand, public quote: SyntaxNode) {
+export class ButtonWidget extends CommandWidgetBase<Host> {
+	constructor(host: Host, command: ParsedCommand<Host>, public quote: SyntaxNode) {
 		super(host, command);
 	}
 

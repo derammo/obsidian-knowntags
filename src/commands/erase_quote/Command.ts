@@ -1,13 +1,14 @@
-import { HEADER_NODE_PREFIX, QUOTE_NODE_CONTAINING_COMMAND_PREFIX, QUOTE_NODE_PREFIX } from "src/derobst/ObsidianInternals";
-import { Decoration, SyntaxNode } from "src/derobst/ParsedCommand";
-import { ParsedCommandWithSettings } from "src/derobst/ParsedCommandWithSettings";
+import { Decoration, ParsedCommandWithParameters, SyntaxNode } from "derobst/command";
+import { HEADER_NODE_PREFIX, QUOTE_NODE_CONTAINING_COMMAND_PREFIX, QUOTE_NODE_PREFIX } from "derobst/internals";
+import { ViewPluginContext } from "derobst/view";
+import { Host } from "main/Plugin";
+import { WidgetFormatter } from "main/WidgetFormatter";
 
-import { CommandContext } from "src/main/Plugin";
 import { ButtonWidget } from "./ButtonWidget";
 
 const COMMAND_REGEX = /^\s*!erase-quote(?:\s(.*)|$)/;
 
-export class Command extends ParsedCommandWithSettings {
+export class Command extends ParsedCommandWithParameters<Host> {
 	get regex(): RegExp {
 		return COMMAND_REGEX;
 	}
@@ -16,7 +17,7 @@ export class Command extends ParsedCommandWithSettings {
 		return text.match(COMMAND_REGEX) !== null;
 	}
 
-	buildWidget(context: CommandContext): void {
+	buildWidget(context: ViewPluginContext<Host>): void {
 		let scan: SyntaxNode | null = this.commandNode;
 		
 		while (scan !== null) {
@@ -43,7 +44,7 @@ export class Command extends ParsedCommandWithSettings {
 
 		const text = new ButtonWidget(context.plugin, this, scan);
 		context.builder.add(this.commandNode.from-1, this.commandNode.from-1, Decoration.widget({ widget: text }));
-		context.markBasedOnSettings(this);
+		WidgetFormatter.markBasedOnParameters(context, this);
 	}
 }
 

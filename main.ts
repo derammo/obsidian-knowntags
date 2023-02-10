@@ -1,4 +1,4 @@
-import { KnownTagsPlugin } from './src/main/PluginImplementation';
+import { KnownTagsPlugin } from 'main/PluginImplementation';
 
 export default KnownTagsPlugin;
 

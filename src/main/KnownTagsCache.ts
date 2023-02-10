@@ -1,4 +1,4 @@
-import { CachedMetadata, Notice, TFile } from 'obsidian';
+import { Plugin, CachedMetadata, Notice, TFile } from 'obsidian';
 
 export class TagInfo {
 	[key: string] : any;
@@ -7,6 +7,20 @@ export class TagInfo {
 export class KnownTagsCache {
 	initialized: boolean;
 	data: { [toplevel: string]: { [subpath: string]: TagInfo; }; } = {};
+
+	constructor(plugin: Plugin) {
+		/**
+		 * XXX This is not called when a file is renamed for performance reasons.
+		 * You must hook the vault rename event for those.
+		 *
+		 * XXX this means we would have to figure out if any of our metadata files are affected if we wanted to have well defined behavior
+		 * with duplicate definitions
+		 *
+		 * (Details: https://github.com/obsidianmd/obsidian-api/issues/77)
+		 */
+		plugin.registerEvent(plugin.app.metadataCache.on('changed', (file: TFile, data: string, cache: CachedMetadata) => this.onMetadataChanged(file, data, cache)));
+		plugin.registerEvent(plugin.app.metadataCache.on('deleted', (file: TFile, prevCache: CachedMetadata) => this.onMetadataDeleted(file, prevCache)));
+	}
 
 	// XXX this is wrong, it would be more complicated because we have to figure out which files are affected by folder renames
 	// for each top-level tag:
@@ -63,7 +77,6 @@ export class KnownTagsCache {
 					return;
 				}
 				tagRecord[subPath] = tagDefinitions[key];
-				console.log(`${tag}/${subPath}: ${JSON.stringify(tagDefinitions[key])}`);
 			});
 		});
 		this.data = tagsDict;
