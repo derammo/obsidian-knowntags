@@ -16,12 +16,9 @@ export class Command extends ParsedCommandWithParameters<Host> {
 	}
 
 	// declare that we need to be constructed and shown all nodes from the syntax tree, even if our command does not match
-	static get observer(): boolean {
-		return true;
-	}
+	static observes: boolean = true;
 
 	observe(node: SyntaxNodeRef): void {
-		super.observe(node);
 		if (node.type.name.startsWith("hashtag_hashtag-end")) {
 			// freeze copy of the node reference
 			this.tagNode = node.node;

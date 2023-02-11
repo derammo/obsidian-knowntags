@@ -15,7 +15,7 @@ export class ViewPluginContext<THostPlugin extends MinimalPlugin> extends Extens
 // base for CodeMirror view plugins, which are children of the Obsidian plugin "THostPlugin" that get
 // called to create or update decorations in source and live preview modes
 export abstract class ViewPluginBase<THostPlugin extends MinimalPlugin> implements PluginValue {
-	decorations: DecorationSet;
+	decorations: DecorationSet = Decoration.none;
 
 	constructor(view: EditorView) {
 		this.decorations = this.buildDecorations(view);

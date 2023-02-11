@@ -5,6 +5,9 @@ import { ViewPluginContext } from "derobst/view";
 import { editorInfoField } from "obsidian";
 import { Host } from "./Plugin";
 
+
+// base for commands that gather descriptors (short pieces of prompts) from tags and quotes in 
+// description section of the current file
 export abstract class DescriptorsCommand extends ParsedCommandWithParameters<Host> {
 	constructor(private frontMatterSection: string) {
 		super();

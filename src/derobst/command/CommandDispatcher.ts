@@ -9,7 +9,7 @@ export interface MinimalCommand<THostPlugin extends MinimalPlugin> {
 
     buildWidget(context: ExtensionContext<THostPlugin>): void;
 
-    observe(node: SyntaxNodeRef): void;
+    observe?(node: SyntaxNodeRef): void;
 }
 
 export interface MinimalCommandClass<THostPlugin extends MinimalPlugin> {
@@ -20,7 +20,7 @@ export interface MinimalCommandClass<THostPlugin extends MinimalPlugin> {
     match(text: string): boolean;
 
     // if true, this command is always instantiated and receives all tokens in the syntax tree
-    observer: boolean;
+    observes?: boolean;
 }
 
 export class CommandDispatcher<THostPlugin extends MinimalPlugin> {
@@ -28,7 +28,7 @@ export class CommandDispatcher<THostPlugin extends MinimalPlugin> {
     private commandOnlyClasses: MinimalCommandClass<THostPlugin>[] = [];
 
     registerCommand(commandClass: MinimalCommandClass<THostPlugin>): void {
-        if (commandClass.observer) {
+        if (commandClass.observes ?? false) {
             this.observerClasses.push(commandClass);
         } else {
             this.commandOnlyClasses.push(commandClass);
@@ -49,10 +49,6 @@ export class CommandDispatcher<THostPlugin extends MinimalPlugin> {
             classes = this.observerClasses.concat(classes);
             observers = this.observerClasses.map(commandClass => new commandClass());
         }
-
-        const handleCommand = (node: SyntaxNodeRef) => {
-            console.log(`INDIRECT ${node.type.name}`);
-        };
 
         tree.iterate({
             from,

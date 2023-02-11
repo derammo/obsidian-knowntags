@@ -10,14 +10,6 @@ export abstract class ParsedCommand<THostPlugin extends MinimalPlugin> implement
     abstract buildWidget(context: ViewPluginContext<THostPlugin>): void;
     abstract get regex(): RegExp;
 
-    static get observer(): boolean { 
-        return false; 
-    }
-
-    observe(_node: SyntaxNodeRef) {
-        // no code
-    }
-
     // WARNING: this is only stable as long as the document does not change, because it contains offsets into the text
     commandNode: SyntaxNode;
 

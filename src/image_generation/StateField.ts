@@ -99,12 +99,3 @@ function walkTree(host: Host, builder: RangeSetBuilder<Decoration>, state: Edito
     },
   });
 }
-
-function traceNode(state: EditorState, scannedNode: SyntaxNodeRef | null) {
-  if (scannedNode === null) {
-    console.log(`STATE_FIELD_NODE null`);
-    return;
-  }
-  console.log(`STATE_FIELD_NODE ${scannedNode!.type?.name} at [${scannedNode!.from}, ${scannedNode!.to}] '${state.doc.sliceString(scannedNode!.from, scannedNode!.to)}'`);
-}
-

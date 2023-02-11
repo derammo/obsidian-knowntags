@@ -5,13 +5,11 @@ import { Host } from "main/Plugin";
 import { ImageReference } from "./ImageReference";
 
 export class ButtonWidget extends WidgetType {
-	height: number | undefined;
 	imageReference: ImageReference;
 
 	constructor(public host: Host, public imageReferences: ImageReference[]) {
 		super();
 		this.imageReference = imageReferences.last()!;
-		// if host.settings.imagePresentationSize !== undefined
 	}
 
 	toDOM(view: EditorView): HTMLElement {
@@ -23,32 +21,16 @@ export class ButtonWidget extends WidgetType {
 		span.style.paddingBottom = "0px";
 		span.style.verticalAlign = "top";
 	
-		// can't get this to expand to parent height which is auto from contained (sibling to us) image, so we force it
-		// span.style.alignItems = "stretch";
-		// span.style.alignContent = "stretch";
-		// span.style.height = "100%";
-		span.style.marginRight = "20px";
-		if (this.height !== undefined) {
-			span.style.minHeight = `${this.height}px`;
-		}
-
 		span.style.width = "70px";
 		span.style.marginLeft = "-70px";
 
 		span.appendChild(this.buildChooseButton(view));
 		span.appendChild(this.buildKeepButton(view));
 		span.appendChild(this.buildDiscardButton(view));
-
-		const testLast = document.createElement("div")
-		// testLast.style.backgroundColor = "red";
-		testLast.style.flexGrow = "1";
-		span.appendChild(testLast);
-
-		// XXX more buttons
 		return span;
 	}
 
-	buildKeepButton(view: EditorView, disabled: boolean = false): HTMLElement {
+	buildKeepButton(view: EditorView): HTMLElement {
 		const control = this.buildFlexButton();
 		const imageReference = this.imageReference;
 		const host = this.host;

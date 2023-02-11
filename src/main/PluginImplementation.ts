@@ -34,7 +34,7 @@ export class KnownTagsPlugin extends ObsidianPluginBase implements Host {
 
 		this.cache = new KnownTagsCache(this);
 
-		// This adds a settings tab so the user can configure various aspects of the plugin
+		// this adds a settings tab so the user can configure various aspects of the plugin
 		this.addSettingTab(new SettingTab(this.app, this));
 
 		this.buildCommands();
