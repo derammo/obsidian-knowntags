@@ -1,10 +1,11 @@
 import { Plugin, CachedMetadata, Notice, TFile } from 'obsidian';
+import { DerAmmoKnownTagsAPI_V1 } from '../../api';
 
 export class TagInfo {
 	[key: string] : any;
 }
 
-export class KnownTagsCache {
+export class KnownTagsCache implements DerAmmoKnownTagsAPI_V1 {
 	initialized: boolean;
 	data: { [toplevel: string]: { [subpath: string]: TagInfo; }; } = {};
 

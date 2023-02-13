@@ -1,4 +1,3 @@
-import { CommandDispatcher } from "derobst/command";
 import { MinimalCommandHost } from "derobst/interfaces";
 import { MetadataCache, TFile } from "obsidian";
 import { KnownTagsCache } from "./KnownTagsCache";
@@ -21,11 +20,6 @@ export interface Host extends MinimalCommandHost<Host> {
     settings: Settings;
     cache: KnownTagsCache;
 
-    // functionality specific to this plugin
-	generateImages(prompt: string): Promise<{ generationId: string; urls: string[]; }>; 
-	createFileFromBuffer(arg0: string, buffer: Buffer): Promise<TFile>;
-	loadFile(path: string): Promise<TFile>;
- 
     // pass through to Obsidian API
     metadataCache: MetadataCache;
 };
