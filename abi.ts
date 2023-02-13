@@ -19,9 +19,10 @@ declare global {
 export const DerAmmoKnownTagsABI_V1: PluginABI<DerAmmoKnownTagsAPI_V1> = {
     initializeInterface: function (record: PluginInterface<DerAmmoKnownTagsAPI_V1>): void {
         window["derammo.api"] = window["derammo.api"] ?? { interfaces: {} };
+        window["derammo.api"].interfaces = window["derammo.api"].interfaces ?? {}; 
         window["derammo.api"].interfaces[VERSION1] = record;
     },
     getInterface: function (): PluginInterface<DerAmmoKnownTagsAPI_V1> | undefined {
-        return window["derammo.api"].interfaces[VERSION1];
+        return window["derammo.api"]?.interfaces?.[VERSION1];
     }
 };
