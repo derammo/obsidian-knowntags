@@ -1,4 +1,4 @@
-import { PluginABI, WaitingClient } from "derobst/api";
+import { PluginABI, PluginInterface } from "derobst/api";
 import { DerAmmoKnownTagsAPI_V1 } from "./api";
 
 const VERSION1 = "derammo.knowntags.v1";
@@ -7,27 +7,21 @@ const VERSION1 = "derammo.knowntags.v1";
 declare global {
     interface Window {
         ["derammo.api"]: {
-            providers: {
-                [VERSION1]?: DerAmmoKnownTagsAPI_V1;
-            };
-            clients: {
-                [VERSION1]?: WaitingClient<DerAmmoKnownTagsAPI_V1>[];
+            interfaces: {
+                [VERSION1]?: PluginInterface<DerAmmoKnownTagsAPI_V1>
             };
         };
     }
 }
 
+// this code checks the types of the individual records in the interfaces collection
+// and freezes the binary contract in the client that imports this code
 export const DerAmmoKnownTagsABI_V1: PluginABI<DerAmmoKnownTagsAPI_V1> = {
-    getAPI: function (): DerAmmoKnownTagsAPI_V1 | undefined {
-        return window["derammo.api"].providers[VERSION1];
+    initializeInterface: function (record: PluginInterface<DerAmmoKnownTagsAPI_V1>): void {
+        window["derammo.api"] = window["derammo.api"] ?? { interfaces: {} };
+        window["derammo.api"].interfaces[VERSION1] = record;
     },
-    setAPI: function (value: DerAmmoKnownTagsAPI_V1): void {
-        window["derammo.api"].providers[VERSION1] = value;
-    },
-    getClients: function (): WaitingClient<DerAmmoKnownTagsAPI_V1>[] {
-        return window["derammo.api"].clients[VERSION1];
-    },
-    setClients: function (clients: WaitingClient<DerAmmoKnownTagsAPI_V1>[]): void {
-        window["derammo.api"].clients[VERSION1] = clients;
+    getInterface: function (): PluginInterface<DerAmmoKnownTagsAPI_V1> | undefined {
+        return window["derammo.api"].interfaces[VERSION1];
     }
 };
