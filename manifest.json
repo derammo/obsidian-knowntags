@@ -3,9 +3,9 @@
 	"name": "Known Tags",
 	"version": "1.0.15",
 	"minAppVersion": "0.15.0",
-	"description": "XXX known tags descriptions.",
+	"description": "Obsidian plugin used to track metadata about known tag values and provide UI elements based on that data.",
 	"author": "derammo",
 	"authorUrl": "https://github.com/derammo",
-	"fundingUrl": "",
+	"fundingUrl": "https://paypal.me/derammo",
 	"isDesktopOnly": false
 }
