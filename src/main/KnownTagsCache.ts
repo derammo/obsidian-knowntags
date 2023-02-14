@@ -1,5 +1,5 @@
 import { Plugin, CachedMetadata, Notice, TFile } from 'obsidian';
-import { DerAmmoKnownTagsAPI_V1 } from '../../api';
+import { DerAmmoKnownTagsAPI_V1 } from '../api/api';
 
 export class TagInfo {
 	[key: string] : any;

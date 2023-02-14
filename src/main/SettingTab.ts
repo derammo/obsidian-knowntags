@@ -1,12 +1,9 @@
-import { App, PluginSettingTab, Setting } from 'obsidian';
-import { KnownTagsPlugin } from "./PluginImplementation";
+import { App, PluginSettingTab, Plugin, Setting } from 'obsidian';
+import { Host } from './Plugin';
 
 export class SettingTab extends PluginSettingTab {
-	plugin: KnownTagsPlugin;
-
-	constructor(app: App, plugin: KnownTagsPlugin) {
+	constructor(app: App, plugin: Plugin, private host: Host) {
 		super(app, plugin);
-		this.plugin = plugin;
 	}
 
 	display(): void {
@@ -21,30 +18,30 @@ export class SettingTab extends PluginSettingTab {
 			.setDesc('If set, only the specified folder is scanned for meta information in frontmatter.')
 			.addText(text => text
 				.setPlaceholder('Folder Name')
-				.setValue(this.plugin.settings.tagsFolder ?? "")
+				.setValue(this.host.settings.tagsFolder ?? "")
 				.onChange(async (value) => {
-					this.plugin.settings.tagsFolder = value;
-					await this.plugin.saveSettings();
+					this.host.settings.tagsFolder = value;
+					await this.host.saveSettings();
 				}));
 				
 		new Setting(containerEl)
 			.setName('Default Hide')
 			.setDesc('If set, recognized inline commands are hidden when not being edited.  Can be overridden by "hide" or "nohide" keywords in command string.')
 			.addToggle(value => value
-				.setValue(this.plugin.settings.defaultHide)
+				.setValue(this.host.settings.defaultHide)
 				.onChange(async (value) => {
-					this.plugin.settings.defaultHide = value;
-					await this.plugin.saveSettings();
+					this.host.settings.defaultHide = value;
+					await this.host.saveSettings();
 				}));
 				
 		new Setting(containerEl)
 			.setName('Default Dim')
 			.setDesc('If set, recognized and unhidden inline commands are shown dim when not being edited.  Can be overridden by "dim" or "nodim" keywords in command string.')
 			.addToggle(value => value
-				.setValue(this.plugin.settings.defaultDim)
+				.setValue(this.host.settings.defaultDim)
 				.onChange(async (value) => {
-					this.plugin.settings.defaultDim = value;
-					await this.plugin.saveSettings();
+					this.host.settings.defaultDim = value;
+					await this.host.saveSettings();
 				}));
 	}
 		

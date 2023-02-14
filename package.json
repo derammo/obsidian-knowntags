@@ -1,6 +1,6 @@
 {
 	"name": "obsidian-knowntags",
-	"version": "1.0.13",
+	"version": "1.0.14",
 	"description": "Known Tags Plugin for Obsidian (https://obsidian.md)",
 	"keywords": [],
 	"author": "",
@@ -15,7 +15,6 @@
 		"esbuild": "0.17.3",
 		"obsidian": "latest",
 		"tslib": "2.4.0",
-		"tsup": "^6.6.0",
 		"typescript": "4.7.4"
 	},
 	"dependencies": {
@@ -26,27 +25,8 @@
 	"scripts": {
 		"dev": "node esbuild.config.mjs",
 		"build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
-		"version": "node version-bump.mjs && git add manifest.json versions.json",
-		"interface": "npm run build && tsup && npm pack"
+		"version": "node version-bump.mjs && git add manifest.json versions.json"
 	},
-	"main": "dist/index.js",
-	"types": "dist/index.d.ts",
-	"tsup": {
-		"entry": [
-			"./index.ts"
-		],
-		"splitting": false,
-		"sourcemap": false,
-		"clean": true,
-		"dts": true
-	},
-	"files": [
-		"dist/index.d.ts",
-		"dist/index.js",
-		"manifest.json",
-		"README.md",
-		"LICENSE",
-		"CHANGELOG.md",
-		"versions.json"
-	]
+	"main": "main.js",
+	"types": "main.d.ts"
 }

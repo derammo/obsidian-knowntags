@@ -1,5 +1,5 @@
 import { MinimalCommandHost } from "derobst/interfaces";
-import { MetadataCache, TFile } from "obsidian";
+import { MetadataCache } from "obsidian";
 import { KnownTagsCache } from "./KnownTagsCache";
 
 export interface Settings {
