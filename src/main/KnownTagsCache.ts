@@ -1,142 +1,91 @@
-import { Plugin, CachedMetadata, Notice, TFile } from 'obsidian';
+import { Definitions, GlobalFrontMatter } from 'derobst/files';
+import { Plugin } from 'obsidian';
 import { DerAmmoKnownTagsAPI_V1 } from '../api/api';
 
-export class TagInfo {
-	[key: string] : any;
-}
+// definitions for each subtag by subpath
+type TopLevel = Map<string, Definitions>;
 
-export class KnownTagsCache implements DerAmmoKnownTagsAPI_V1 {
-	initialized: boolean;
-	data: { [toplevel: string]: { [subpath: string]: TagInfo; }; } = {};
+export class KnownTagsCache extends GlobalFrontMatter implements DerAmmoKnownTagsAPI_V1 {
+	private data: Map<string, TopLevel> = new Map<string, TopLevel>();
 
-	constructor(plugin: Plugin) {
-		/**
-		 * XXX This is not called when a file is renamed for performance reasons.
-		 * You must hook the vault rename event for those.
-		 *
-		 * XXX this means we would have to figure out if any of our metadata files are affected if we wanted to have well defined behavior
-		 * with duplicate definitions
-		 *
-		 * (Details: https://github.com/obsidianmd/obsidian-api/issues/77)
-		 */
-		plugin.registerEvent(plugin.app.metadataCache.on('changed', (file: TFile, data: string, cache: CachedMetadata) => this.onMetadataChanged(file, data, cache)));
-		plugin.registerEvent(plugin.app.metadataCache.on('deleted', (file: TFile, prevCache: CachedMetadata) => this.onMetadataDeleted(file, prevCache)));
-	}
+    constructor(plugin: Plugin) {
+        super(plugin);
+        this.rootKey = "derammo-known-tags";
+    }
 
-	// XXX this is wrong, it would be more complicated because we have to figure out which files are affected by folder renames
-	// for each top-level tag:
-	//   for each subtag path past the top level
-	//     ordered list of paths in which definition is found, for rescan
-	//     metadata from last definition
-	// scan function to scan vault in well defined order
-	// only scan specified tags folder if given, for performance
-	// XXX for now, warn if duplicate definitions are found and do not guarantee well defined behavior in that case 
-	// since we don't know the files' sort order if renames happen
-	initialize() {
-		if (!this.initialized) {
-			this.scan();
-			this.initialized = true;
-		}
-	}
-
-	// XXX factor metadata cache base class for derobst
-	scan() {
-		const files = app.vault.getMarkdownFiles();
-		let tagsDict: { [topLevel: string]: { [subPath: string]: TagInfo; }; } = {};
-
-		// sort by path descending, even though that apparently is already the case
-		files.sort((left: TFile, right: TFile) => {
-			return right.path.localeCompare(left.path);
-		});
-
-		// scan all tag definitions and classify by top level tag
-		files.forEach((file: TFile) => {
-			let fileMeta = app.metadataCache.getFileCache(file)?.frontmatter;
-			if (fileMeta === undefined) {
-				return;
-			}
-			const tagDefinitions = fileMeta['derammo-known-tags'];
-			if (tagDefinitions === undefined) {
-				return;
-			}
-			Object.getOwnPropertyNames(tagDefinitions).forEach((key: string) => {
-				const slash = key.indexOf("/");
-				if (slash < 1) {
-					return;
-				}
-				const tag = key.slice(0, slash);
-				const subPath = key.slice(slash + 1);
-				let tagRecord: { [subPath: string]: TagInfo; };
-				if (tagsDict.hasOwnProperty(tag)) {
-					tagRecord = tagsDict[tag];
-				} else {
-					tagRecord = {};
-					tagsDict[tag] = tagRecord;
-				}
-				if (tagRecord.hasOwnProperty(subPath)) {
-					new Notice(`WARNING: multiple definitions of '${key}'; ignoring definition in '${file.path}'`);
-					return;
-				}
-				tagRecord[subPath] = tagDefinitions[key];
-			});
-		});
-		this.data = tagsDict;
-	}
-
-	getTopLevel(tag: string): string | null {
+    getTopLevel(tag: string): string | null {
 		this.initialize();
-		const slash = tag.indexOf("/");
-		if (slash < 1) {
-			return null;
-		}
-		return tag.slice(0, slash);
+		const { topLevelKey } = this.splitKeys(tag);
+		return topLevelKey ?? null;
 	}
 
 	getMetadata(tag: string, frontMatterSection: string): any | null {
-		const slash = tag.indexOf("/");
-		if (slash < 1) {
+		const { topLevelKey, subPath } = this.splitKeys(tag);
+        if (!this.data.has(topLevelKey)) {
+            return null;
+        }
+		const topLevel = this.data.get(topLevelKey);
+		if (!topLevel.has(subPath)) {
 			return null;
 		}
-		const topLevel = tag.slice(0, slash);
-		if (!this.data.hasOwnProperty(topLevel)) {
-			return null;
-		}
-		const topData = this.data[topLevel];
-		const subPath = tag.slice(slash + 1);
-		if (!topData.hasOwnProperty(subPath)) {
-			return null;
-		}
-		const subData: TagInfo = topData[subPath];
-		if (!subData.hasOwnProperty(frontMatterSection)) {
-			return null;
-		}
-		return subData[frontMatterSection];
+        return (topLevel.get(subPath).value?.[frontMatterSection] ?? null);
 	}
 
 	getChoices(topLevel: string): string[] {
 		this.initialize();
-		if (!this.data.hasOwnProperty(topLevel)) {
+        if (!this.data.has(topLevel)) {
 			return [];
 		}
-		return Object.getOwnPropertyNames(this.data[topLevel]);
+		const definition = this.data.get(topLevel);
+        if (definition === undefined) {
+            return [];
+        }
+		return Array.from(definition.keys());
 	}
 
-	onMetadataChanged(file: TFile, data: string, cache: CachedMetadata) {
-		const metadata = cache?.frontmatter;
-		if (metadata === undefined) {
+	protected onVaultClosed() {
+		this.data.clear();
+		super.onVaultClosed();
+	}
+
+	protected splitKeys(tag: string): { topLevelKey?: string, subPath?: string } {
+		const slash = tag.indexOf("/");
+		if (slash < 1) {
+			return {};
+		}
+		const topLevelKey = tag.slice(0, slash);
+		const subPath = tag.slice(slash + 1);
+		return { topLevelKey, subPath };
+	}
+
+    protected resolveRecord(key: string): Definitions | undefined {
+		const { topLevelKey, subPath } = this.splitKeys(key);
+		let topLevel: TopLevel;
+        if (this.data.has(topLevelKey)) {
+			topLevel = this.data.get(topLevelKey);
+        } else {
+			topLevel = new Map<string, Definitions>();
+			this.data.set(topLevelKey, topLevel);
+		}
+		let record: Definitions;
+		if (topLevel.has(subPath)) {
+			record = topLevel.get(subPath);
+		} else {	
+			record = new Definitions();
+			topLevel.set(subPath, record);
+		}
+        return record;
+    }
+
+    protected removeRecord(key: string): void {
+		const { topLevelKey, subPath } = this.splitKeys(key);
+        if (!this.data.has(topLevelKey)) {
+			return;
+        } 
+		const topLevel = this.data.get(topLevelKey);
+		if (!topLevel.has(subPath)) {
 			return;
 		}
-		const tagDefinitions = metadata['derammo-known-tags'];
-		if (tagDefinitions === undefined) {
-			return;
-		}
-
-		// XXX HACK PREVIEW just scan the world
-		this.scan();
-	}
-
-	onMetadataDeleted(file: TFile, prevCache: CachedMetadata) {
-		// XXX HACK PREVIEW just scan the world
-		this.scan();
-	}
+		topLevel.delete(subPath);		
+	}	
 }
