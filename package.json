@@ -27,7 +27,6 @@
 	"files": [
 		"main.js",
 		"main.js.map",
-		"main.d.ts",
 		"manifest.json",
 		"versions.json",
 		"styles.css",
