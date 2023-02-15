@@ -20,6 +20,7 @@ export class KnownTagsCache extends GlobalFrontMatter implements DerAmmoKnownTag
 	}
 
 	getMetadata(tag: string, frontMatterSection: string): any | null {
+		this.initialize();
 		const { topLevelKey, subPath } = this.splitKeys(tag);
         if (!this.data.has(topLevelKey)) {
             return null;
