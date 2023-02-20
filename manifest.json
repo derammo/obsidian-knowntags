@@ -1,11 +1,11 @@
 {
-	"id": "obsidian-sample-plugin",
-	"name": "Sample Plugin",
-	"version": "1.0.0",
+	"id": "obsidian-derammo-knowntags",
+	"name": "Known Tags",
+	"version": "1.0.18",
 	"minAppVersion": "0.15.0",
-	"description": "This is a sample plugin for Obsidian. This plugin demonstrates some of the capabilities of the Obsidian API.",
-	"author": "Obsidian",
-	"authorUrl": "https://obsidian.md",
-	"fundingUrl": "https://obsidian.md/pricing",
-	"isDesktopOnly": false
+	"description": "Obsidian plugin used to track metadata about known tag values and provide UI elements based on that data.",
+	"author": "derammo",
+	"authorUrl": "https://github.com/derammo",
+	"fundingUrl": "https://paypal.me/derammo",
+	"isDesktopOnly": true
 }

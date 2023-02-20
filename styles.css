@@ -1,8 +1,7 @@
-/*
+img + span.cm-inline-code > span.derammo-known-tags.derammo-known-tags-auto-dim {
+    color: var(--text-faint);
+}
 
-This CSS file will be included with your plugin, and
-available in the app when your plugin is enabled.
-
-If your plugin does not need CSS, delete this file.
-
-*/
+img + span.cm-inline-code > span.derammo-known-tags.derammo-known-tags-auto-hide {
+    display: none;
+}
