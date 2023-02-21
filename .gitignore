@@ -27,3 +27,8 @@ dist/
 # packages
 *.tar.gz
 *.tgz
+
+# example vault
+examples/.obsidian/plugins
+examples/.obsidian/*.json
+!examples/.obsidian/community-plugins.json

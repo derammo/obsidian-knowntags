@@ -1,14 +1,15 @@
-import { EditorView, ParsedCommand, SyntaxNode } from "derobst/command";
+import { CommandContext, EditorView, ParsedCommand, SyntaxNode } from "derobst/command";
 import { Host } from "main/Plugin";
 import { WidgetBase } from './WidgetBase';
 
 export class EditWidget extends WidgetBase {
-	constructor(host: Host, tagNode: SyntaxNode, command: ParsedCommand<Host>) {
-		super(host, tagNode, command);
+	constructor(context: CommandContext<Host>, tagNode: SyntaxNode, command: ParsedCommand<Host>) {
+		super(context, tagNode, command);
 	}
 
 	toDOM(view: EditorView): HTMLElement {
 		const span = document.createElement("span");
+		span.classList.add("derammo-edit-container");
 		const topLevel = this.host.cache.getTopLevel(this.getTag(view));
 		if (topLevel !== undefined) {
 			span.appendChild(this.createControl(view));
@@ -18,8 +19,8 @@ export class EditWidget extends WidgetBase {
 	
 	createControl(view: EditorView): HTMLElement {
 		const control = document.createElement("input");
+		control.classList.add("derammo-edit-control");
 		control.type = "text";
-		this.styleToMatchTags(control);
 		this.host.registerDomEvent(control, "change", async (event: Event) => {
 			const input: string = ((event.target as HTMLInputElement)?.value ?? "").trim();
 			const topLevel = this.host.cache.getTopLevel(this.getTag(view));

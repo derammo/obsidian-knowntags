@@ -1,14 +1,15 @@
-import { EditorView, ParsedCommand, SyntaxNode } from "derobst/command";
+import { CommandContext, EditorView, ParsedCommand, SyntaxNode } from "derobst/command";
 import { Host } from "main/Plugin";
 import { WidgetBase } from './WidgetBase';
 
 export class RadioGroupWidget extends WidgetBase {
-	constructor(host: Host, tagNode: SyntaxNode, command: ParsedCommand<Host>) {
-		super(host, tagNode, command);
+	constructor(context: CommandContext<Host>, tagNode: SyntaxNode, command: ParsedCommand<Host>) {
+		super(context, tagNode, command);
 	}
 
 	toDOM(view: EditorView): HTMLElement {
 		const span = document.createElement("span");
+		span.classList.add("derammo-radiogroup-container");
 		const topLevel = this.host.cache.getTopLevel(this.getTag(view));
 		if (topLevel !== null) {
 			this.host.cache.getChoices(topLevel).forEach((subpath: string) => {
@@ -20,8 +21,9 @@ export class RadioGroupWidget extends WidgetBase {
 
 	createButton(view: EditorView, label: string, value: string): HTMLElement {
 		const button = document.createElement("button");
-		button.innerText = label;
 		this.styleToMatchTags(button);
+		button.classList.add("derammo-radiogroup-button", "derammo-button");
+		button.innerText = label;
 		this.host.registerDomEvent(button, "click", async () => {
 			// edit back to front to keep syntax tree coordinates valid
 			await this.command.handleUsed(view);

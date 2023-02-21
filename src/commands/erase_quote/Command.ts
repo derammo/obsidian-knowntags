@@ -1,4 +1,4 @@
-import { Decoration, ParsedCommandWithParameters, SyntaxNode } from "derobst/command";
+import { Decoration, ParsedCommandWithParameters, SyntaxNode, SyntaxNodeRef } from "derobst/command";
 import { HEADER_NODE_PREFIX, QUOTE_NODE_CONTAINING_COMMAND_PREFIX, QUOTE_NODE_PREFIX } from "derobst/internals";
 import { ViewPluginContext } from "derobst/view";
 import { Host } from "main/Plugin";
@@ -17,8 +17,8 @@ export class Command extends ParsedCommandWithParameters<Host> {
 		return text.match(COMMAND_REGEX) !== null;
 	}
 
-	buildWidget(context: ViewPluginContext<Host>): void {
-		let scan: SyntaxNode | null = this.commandNode;
+	buildWidget(context: ViewPluginContext<Host>, commandNodeRef: SyntaxNodeRef): void {
+		let scan: SyntaxNode | null = commandNodeRef.node;
 		
 		while (scan !== null) {
 			if (scan.type.name.startsWith(HEADER_NODE_PREFIX)) {
@@ -42,9 +42,9 @@ export class Command extends ParsedCommandWithParameters<Host> {
 			return;
 		}
 
-		const text = new ButtonWidget(context.plugin, this, scan);
-		context.builder.add(this.commandNode.from-1, this.commandNode.from-1, Decoration.widget({ widget: text }));
-		WidgetFormatter.markBasedOnParameters(context, this);
+		const text = new ButtonWidget(context, this, scan);
+		context.builder.add(commandNodeRef.from-1, commandNodeRef.from-1, Decoration.widget({ widget: text }));
+		WidgetFormatter.markBasedOnParameters(context, this, commandNodeRef);
 	}
 }
 

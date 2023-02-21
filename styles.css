@@ -5,3 +5,54 @@ img + span.cm-inline-code > span.derammo-known-tags.derammo-known-tags-auto-dim 
 img + span.cm-inline-code > span.derammo-known-tags.derammo-known-tags-auto-hide {
     display: none;
 }
+
+.derammo-match-tags {
+    height: auto;
+    width: auto;
+    padding-top: 0em;
+    padding-bottom: 0em;
+    margin-right: 0.25em;
+    color: var(--text-normal);
+}
+
+.derammo-delete-button {
+    width: 1.6em;
+    height: 1.6em;
+    padding: 0.2em;
+    vertical-align: bottom;
+    margin-left: 0.2em;
+}
+
+.derammo-button:hover {
+    cursor: pointer;
+}
+
+.derammo-combobox, .derammo-edit-control {
+    /* no code */
+    padding-top: 0em;
+    padding-bottom: 0em;
+    margin-top: 0em;
+    margin-bottom: 0.2em;
+    border-color: var(--background-modifier-border);
+    border-radius: 0.4em !important;
+}
+
+.derammo-combobox {
+    min-height: 1.8em;
+    padding-left: 0.6em;
+    padding-top: 0.1em;
+    background-color: var(--interactive-normal);
+    box-shadow: var(--input-shadow);
+    color: var(--text-normal);
+}
+
+.derammo-edit-control {
+    max-height: 1.6em;
+    border: var(--input-border-width) solid var(--background-modifier-border);
+    background: var(--interactive-normal) !important;
+}
+
+.derammo-combobox-container {
+    margin: 0em;
+    padding: 0em;
+}

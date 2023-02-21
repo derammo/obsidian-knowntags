@@ -1,11 +1,11 @@
-import { CommandWidgetBase, EditorView, ParsedCommand, SyntaxNode } from "derobst/command";
+import { CommandContext, CommandWidgetBase, EditorView, ParsedCommand, SyntaxNode } from "derobst/command";
 import { Host } from "main/Plugin";
 
 export abstract class WidgetBase extends CommandWidgetBase<Host> {
 	tagNode: SyntaxNode;
 
-	constructor(host: Host, tagNode: SyntaxNode, command: ParsedCommand<Host>) {
-		super(host, command);
+	constructor(context: CommandContext<Host>, tagNode: SyntaxNode, command: ParsedCommand<Host>) {
+		super(context, command);
 		this.tagNode = tagNode;
 	}
 
@@ -20,12 +20,6 @@ export abstract class WidgetBase extends CommandWidgetBase<Host> {
 	}
 
 	styleToMatchTags(control: HTMLElement) {
-		control.className = "cm-s-obsidian cm-formatting cm-formatting-hashtag cm-hashtag cm-hashtag-begin cm-hashtag-end";
-		control.style.height = "auto";
-		control.style.width = "auto";
-		control.style.paddingTop = "0em";
-		control.style.paddingBottom = "0em";
-		control.style.marginRight = "0.25em";
-		control.style.color = "var(--text-normal)";
+		control.className = "cm-s-obsidian cm-formatting cm-formatting-hashtag cm-hashtag cm-hashtag-begin cm-hashtag-end derammo-match-tags";
 	}
 }

@@ -19,6 +19,7 @@ export class KnownTagsPlugin extends ObsidianPluginBase<Settings> implements Hos
 	async onload() {
 		await this.loadSettings();
 
+		this.registerTextRangeTracker();
 		this.cache = new KnownTagsCache(this);
 		publishAPI(DerAmmoKnownTagsABI_V1, this.cache);
 

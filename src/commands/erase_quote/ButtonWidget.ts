@@ -1,25 +1,26 @@
-import { CommandWidgetBase, EditorView, ParsedCommand, SyntaxNode } from "derobst/command";
+import { CommandWidgetBase, EditorView, ParsedCommand, SyntaxNode, CommandContext } from "derobst/command";
+import { UpdatedTextRange } from "derobst/view";
 import { Host } from "main/Plugin";
 
 export class ButtonWidget extends CommandWidgetBase<Host> {
-	constructor(host: Host, command: ParsedCommand<Host>, public quote: SyntaxNode) {
-		super(host, command);
+	quoteRange: UpdatedTextRange;
+	
+	constructor(context: CommandContext<Host>, command: ParsedCommand<Host>, quote: SyntaxNode) {
+		super(context, command);
+		this.quoteRange = context.plugin.tracking.register(context.state, quote);
 	}
 
 	toDOM(view: EditorView): HTMLElement {
 		const span = document.createElement("span");
+		span.classList.add("derammo-delete-container");
 		span.appendChild(this.buildButtonSVG(view));
 		return span;
 	}
 
 	buildButtonSVG(view: EditorView): HTMLElement {
 		const control = document.createElement("button");
+		control.classList.add("derammo-delete-button", "derammo-button");
 		control.ariaLabel = "Delete";
-		control.style.width = "2em";
-		control.style.height = "2em";
-		control.style.padding = "0.2em";
-		control.style.verticalAlign = "bottom";
-		control.style.marginLeft = "0.5em";
 
 		const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
 		svg.setAttr("width", "100%");
@@ -49,8 +50,13 @@ export class ButtonWidget extends CommandWidgetBase<Host> {
 
 		this.host.registerDomEvent(control, "click", async (_event: Event) => {
 			this.command.handleUsed(view);
+			const quote = this.quoteRange.fetchCurrentRange();
+			const range = this.command.commandRange.fetchCurrentRange();
+			if (quote === null || range === null) {
+				return;
+			}
 			view.dispatch({ 
-				changes: { from: this.quote.from, to: this.command.commandNode.to+2 }
+				changes: { from: quote.from, to: range.to+2 }
 			});		
 		});
 		this.host.registerDomContextMenuTarget(control, this.command);

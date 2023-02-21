@@ -30,25 +30,22 @@ export class Command extends ParsedCommandWithParameters<Host> {
 		return text.match(COMMAND_REGEX) !== null;
 	}
 
-	buildWidget(context: ViewPluginContext<Host>) {
+	buildWidget(context: ViewPluginContext<Host>, commandNodeRef: SyntaxNodeRef) {
 		if (this.tagNode === undefined) {
 			return;
 		}
-		const builder = context.builder;
-		const plugin = context.plugin;
-
 		if (this.parameters.combo) {
-			const combo = new ComboBoxWidget(plugin, this.tagNode, this);
-			builder.add(this.commandNode.from - 1, this.commandNode.from - 1, Decoration.widget({ widget: combo }));
+			const combo = new ComboBoxWidget(context, this.tagNode, this);
+			context.builder.add(commandNodeRef.from - 1, commandNodeRef.from - 1, Decoration.widget({ widget: combo }));
 		} else {
-			const radio = new RadioGroupWidget(plugin, this.tagNode, this);
-			builder.add(this.commandNode.from - 1, this.commandNode.from - 1, Decoration.widget({ widget: radio }));
+			const radio = new RadioGroupWidget(context, this.tagNode, this);
+			context.builder.add(commandNodeRef.from - 1, commandNodeRef.from - 1, Decoration.widget({ widget: radio }));
 
 			if (!this.parameters.noedit) {
-				const text = new EditWidget(plugin, this.tagNode, this);
-				builder.add(this.commandNode.from - 1, this.commandNode.from - 1, Decoration.widget({ widget: text }));
+				const text = new EditWidget(context, this.tagNode, this);
+				context.builder.add(commandNodeRef.from - 1, commandNodeRef.from - 1, Decoration.widget({ widget: text }));
 			}
 		}
-		WidgetFormatter.markBasedOnParameters(context, this);
+		WidgetFormatter.markBasedOnParameters(context, this, commandNodeRef);
 	}
 }

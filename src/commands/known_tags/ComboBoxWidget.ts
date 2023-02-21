@@ -1,4 +1,4 @@
-import { EditorView, ParsedCommand, SyntaxNode } from "derobst/command";
+import { CommandContext, EditorView, ParsedCommand, SyntaxNode } from "derobst/command";
 import { Host } from "main/Plugin";
 import { WidgetBase } from './WidgetBase';
 
@@ -6,17 +6,19 @@ export class ComboBoxWidget extends WidgetBase {
 	initialValue: string;
 	previousValue: string | undefined = undefined
 
-	constructor(host: Host, tagNode: SyntaxNode, command: ParsedCommand<Host>) {
-		super(host, tagNode, command);
+	constructor(context: CommandContext<Host>, tagNode: SyntaxNode, command: ParsedCommand<Host>) {
+		super(context, tagNode, command);
 	}
 
 	toDOM(view: EditorView): HTMLElement {
 		const span = document.createElement("span");
+		span.classList.add("derammo-combobox-container");
 		const tag = this.getTag(view);
 		const topLevel = this.host.cache.getTopLevel(tag);
 		if (topLevel !== null) {
 			const datalistId = `TagComboBoxWidget datalist ${topLevel}`;
 			const datalist = document.createElement("datalist");
+			datalist.classList.add("derammo-datalist");
 			datalist.id = datalistId;
 			this.host.cache.getChoices(topLevel).forEach((subpath: string) => {
 				const option = document.createElement("option");
@@ -24,6 +26,7 @@ export class ComboBoxWidget extends WidgetBase {
 				datalist.appendChild(option);
 			});
 			const input = document.createElement("input");
+			input.classList.add("derammo-combobox");
 			input.setAttribute("list", datalistId);
 			this.initialValue = tag.slice(topLevel.length + 1);
 			input.value = this.initialValue;
