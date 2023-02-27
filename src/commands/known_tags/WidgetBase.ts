@@ -1,21 +1,30 @@
-import { CommandContext, CommandWidgetBase, EditorView, ParsedCommand, SyntaxNode } from "derobst/command";
+import { CommandContext, CommandWidgetBase, EditorView, ParsedCommand, SyntaxNodeRef } from "derobst/command";
+import { UpdatedTextRange } from "derobst/view";
 import { Host } from "main/Plugin";
 
 export abstract class WidgetBase extends CommandWidgetBase<Host> {
-	tagNode: SyntaxNode;
+	protected readonly tagRange: UpdatedTextRange;
 
-	constructor(context: CommandContext<Host>, tagNode: SyntaxNode, command: ParsedCommand<Host>) {
+	constructor(context: CommandContext<Host>, tagNode: SyntaxNodeRef, command: ParsedCommand<Host>) {
 		super(context, command);
-		this.tagNode = tagNode;
+		this.tagRange = context.plugin.tracking.register(context.state, tagNode);
 	}
 
 	getTag(view: EditorView): string {
-		return view.state.doc.sliceString(this.tagNode.from, this.tagNode.to);
+		const tagRange = this.tagRange.fetchCurrentRange();
+		if (tagRange === null) {
+			return "";
+		}
+		return view.state.doc.sliceString(tagRange.from, tagRange.to);
 	}
 
 	async replaceTag(view: EditorView, value: string) {
+		const tagRange = this.tagRange.fetchCurrentRange();
+		if (tagRange === null) {
+			return;
+		}
 		view.dispatch({ 
-			changes: { from: this.tagNode.from, to: this.tagNode.to, insert: value }
+			changes: { from: tagRange.from, to: tagRange.to, insert: value }
 		});
 	}
 

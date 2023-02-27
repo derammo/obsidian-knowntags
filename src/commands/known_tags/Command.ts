@@ -9,6 +9,7 @@ import { RadioGroupWidget } from './RadioGroupWidget';
 const COMMAND_REGEX = /^\s*!known[_-]tags(?:\s(.*)|$)/;
 
 export class Command extends ParsedCommandWithParameters<Host> {
+	// no need for updated range here, this is only held from the observe to the buildWidget stage of the same walk
 	tagNode: SyntaxNode | undefined = undefined;
 
 	get regex(): RegExp {
